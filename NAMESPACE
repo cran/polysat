@@ -7,7 +7,8 @@ export(Bruvo.distance,
        find.missing.gen,
        meandist.from.array, find.na.dist, find.na.dist.not.missing,
        Lynch.distance, write.SPAGeDi, read.SPAGeDi, write.freq.SPAGeDi,
-       read.POPDIST, write.POPDIST, freq.to.genpop)
+       read.POPDIST, write.POPDIST, freq.to.genpop, genotypeProbs,
+       meandistance.matrix2, assignClones, Shannon, Simpson, genotypeDiversity)
 exportMethods(estimatePloidy, Samples, "Samples<-", Loci, "Loci<-", PopInfo,
               "PopInfo<-", PopNames, "PopNames<-", Ploidies, "Ploidies<-",
               Usatnts,

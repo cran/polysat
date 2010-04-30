@@ -2,6 +2,8 @@ Bruvo.distance <- function(genotype1, genotype2, maxl=9, usatnt=2, missing=-9) {
 
 require(combinat) # for permn
 
+if(is.na(usatnt)) stop("Bruvo.distance needs info from Usatnts slot.")
+
 if(identical(genotype1, genotype2)) {dist <- 0} else {
     if((length(genotype1)>maxl & length(genotype2)>maxl)|
        genotype1[1]==missing|genotype2[1]==missing){
@@ -217,3 +219,277 @@ find.na.dist.not.missing<-function(object, distarray,
     return(data.frame(Locus=Locus, Sample1=Sample1, Sample2=Sample2,
                       stringsAsFactors=FALSE))
 }
+
+genotypeProbs <- function(object, sample, locus, freq=NULL, gprob=NULL,
+                          alleles=NULL){
+    pl <- Ploidies(object)[sample] # get ploidy
+    gen <- Genotype(object, sample, locus) # get ambiguous genotype
+
+    # determine which method we are using
+    u <- c(is.null(freq),is.null(gprob),is.null(alleles))
+    ok <- FALSE
+    if(identical(u, c(FALSE,TRUE,TRUE))){
+        selfing <- FALSE
+        ok <- TRUE
+    }
+    if(identical(u, c(TRUE, FALSE,FALSE))){
+        selfing <- TRUE
+        ok <- TRUE
+    }
+    if(!ok) stop("Supply freq, or gprob and alleles.")
+
+    # Errors
+    if(is.na(pl)) stop("Ploidies required.")
+    if(length(gen) >  pl)
+        stop(paste("There are too many alleles for ploidy:",sample,locus))
+
+    # What to do with unambiguous genotypes
+    if(length(gen)==1){
+        results <- list(probs=1, genotypes=matrix(rep(gen, pl), nrow=1,
+                                 ncol=pl))
+    }
+    if(length(gen)==pl){
+        results <- list(probs=1, genotypes=matrix(gen, nrow=1, ncol=pl))
+    }
+
+    # What to do with ambiguous genotypes
+    if(!length(gen) %in% c(1,pl)){
+        if(!selfing){
+          pop <- PopNames(object)[PopInfo(object)[sample]]
+          f <- freq[pop, paste(locus, gen, sep=".")] # get allele frequencies
+          f <- as.vector(f/sum(f)) # normalize frequencies
+          names(f) <- gen
+        }
+        a1 <- length(gen) # number of alleles
+        a2 <- pl-a1 # number of slots to fill
+
+        # set up function for recursive building of genotypes
+        makegen <- function(gmat){
+            gmat2 <- matrix(nrow=0, ncol=dim(gmat)[2]+1)
+            for(i in 1:dim(gmat)[1]){
+                alsofar <- gmat[i,]
+                lastallele <- alsofar[length(alsofar)]
+                for(j in gen[match(lastallele,gen):length(gen)]){
+                    gmat2 <- rbind(gmat2, matrix(c(alsofar,j),nrow=1,
+                                                 ncol=dim(gmat2)[2]))
+                }
+            }
+            if(dim(gmat2)[2]==a2){
+                return(gmat2)
+            } else {
+                return(makegen(gmat2))
+            }
+        }
+        # alleles in ambiguous slots
+        allelefill <- matrix(gen, nrow=a1, ncol=1)
+        if(a2 > 1) allelefill <- makegen(allelefill)
+        ng <- dim(allelefill)[1] # number of genotypes
+        results <- list(probs=c(), genotypes=matrix())
+        # genotypes (unambiguous + ambiguous alleles)
+        results[["genotypes"]] <- cbind(matrix(rep(gen,each=ng),
+                                               nrow=ng,ncol=a1),
+                                        allelefill)
+        # Probability of each genotype & allele sorting
+        for(i in 1:ng){
+            # sort the alleles in this genotype
+            results$genotypes[i,] <- sort(results$genotypes[i,])
+            if(!selfing){  ## random mating method
+              # multiply allele probabilities
+              fmult <- prod(f[as.character(allelefill[i,])])
+              # get the polynomial coefficient
+              allelecopies <- c()
+              for(a in unique(allelefill[i,])){
+                  allelecopies <- c(allelecopies,
+                                  length(allelefill[i,][allelefill[i,]==a]))
+              }
+              pc <- factorial(a2)/prod(mapply(factorial, allelecopies))
+              # get the probability of this genotype
+              results[["probs"]][i] <- pc * fmult
+            } else {  ## partial selfing method
+                # get unambig genotype in terms of genlist numbers
+                ugen <- match(as.integer(results$genotypes[i,]),alleles)
+                results$probs[i] <- gprob[.indexg(ugen, length(alleles), pl)]
+            }
+        }
+        if(selfing){
+            # with selfing method, need to normalize probabilities.
+            results$probs <- results$probs/sum(results$probs)
+        }
+    }
+
+    # Return a list containing unambiguous genotypes and their probabilities
+    return(results)
+}
+
+meandistance.matrix2 <- function(object, samples=Samples(object),
+                                 loci=Loci(object),
+                            freq=simpleFreq(object, samples, loci), self=0,
+                            all.distances=FALSE, distmetric = Bruvo.distance,
+                            progress=TRUE, ...){
+    # Errors
+    if(!all(!is.na(Ploidies(object)[samples])))
+        stop("Ploidies needed.")
+    if(!all(!is.na(PopInfo(object)[samples])))
+        stop("PopInfo needed.")
+    if(!all(PopNames(object)[unique(PopInfo(object)[samples])] %in%
+            row.names(freq))) stop("PopNames must match row.names of freq.")
+
+    # calculate probabilities of every unambiguous genotype from all genotypes
+    gprobs <- array(list(NA), dim=c(length(samples), length(loci)),
+                    dimnames=list(samples, loci))
+    if(self == 0){  # calculate genotype probabilities under random mating
+        for(s in samples){
+            for(L in loci){
+                gprobs[[s,L]] <- genotypeProbs(object, s, L, freq=freq)
+            }
+        }
+    } else {  # calculate genotype probabilities under partial selfing
+        pops <- PopNames(object)[unique(PopInfo(object)[samples])]
+        for(p in pops){
+            psamples <- samples[samples %in% Samples(object, populations=p)]
+            m2 <- unique(Ploidies(object)[psamples])
+            if(length(m2) != 1) stop("Only one ploidy allowed.")
+            if(is.na(m2))
+                stop("Function requires information in Ploidies slot.")
+            if(m2 %% 2 != 0) stop("Ploidy must be even.")
+            for(L in loci){
+                cat("Setting up genotype probabilities...",sep="\n")
+                subfreq <- freq[p, grep(L, names(freq), fixed=TRUE)]
+                templist <- names(subfreq)[subfreq !=0]
+                templist <- strsplit(templist, split=".", fixed=TRUE)
+                alleles <- rep(0, length(templist))
+                for(i in 1:length(alleles)){
+                    alleles[i] <- templist[[i]][2]
+                }
+                # let's just not do null allelles for now
+                # (Hey, I'm trying to graduate.)
+                alleles <- sort(as.integer(alleles[alleles != "null"]))
+                na1 <- length(alleles)
+                # setting stuff up from De Silva method
+                ng <- na1 # number of genotypes
+                for(j in 2:m2){
+                    ng <- ng*(na1+j-1)/j
+                }
+                ag <- .genlist(ng, na1, m2)
+                temp <- .ranmul(ng, na1, ag, m2)
+                rmul <- temp[[1]]
+                arep <- temp[[2]]
+                rm(temp)
+                smat <- .selfmat(ng, na1, ag, m2)
+                m <- m2/2
+                smatdiv <- (.G(m-1,m+1))^2
+                p1 <- rep(0, na1) # vector to hold frequencies
+                for(a in alleles){
+                    p1[match(a, alleles)] <- subfreq[1,
+                                                     grep(a, names(subfreq),
+                                                          fixed=TRUE)]
+                }
+                p1 <- p1/sum(p1) # normalize to sum to 1
+                rvec <- rep(0,ng)
+                for(g in 1:ng){
+                    rvec[g] <- rmul[g]
+                    for(j in 1:m2){
+                        rvec[g] <- rvec[g]*p1[ag[g,j]]
+                    }
+                }
+                id <- diag(nrow=ng)
+                smatt <- smat/smatdiv
+                s3 <- id - self * smatt
+                s3inv <- solve(s3)
+                gprob <- (1-self) * s3inv %*% rvec
+                for(s in psamples){
+                    gprobs[[s,L]] <- genotypeProbs(object, s, L, gprob=gprob,
+                                                   alleles=alleles)
+                }
+            }
+        }
+    }
+
+    # set up a 3D array to hold distances by sample x sample x locus
+    loci.matrices<-array(dim=c(length(loci),length(samples),length(samples)),
+                         dimnames=list(loci,samples,samples))
+
+    # cycle through calculations
+    for(L in loci){
+        u <- Usatnts(object)[L]
+        for(m in samples){
+            for(n in samples[match(m,samples):length(samples)]){
+                totdist <- 0 # total distance so far
+                # cycle through all unambiguous genotypes for these two samples
+                for(i in 1:length(gprobs[[m,L]][["probs"]])){
+                    for(j in 1:length(gprobs[[n,L]][["probs"]])){
+                        # raw distance
+                        d <- distmetric(
+                                 as.vector(gprobs[[m,L]][["genotypes"]][i,]),
+                                 as.vector(gprobs[[n,L]][["genotypes"]][j,]),
+                                        usatnt=u, missing=Missing(object), ...)
+                        # probability of this combination
+                        p <- gprobs[[m,L]][["probs"]][i] *
+                             gprobs[[n,L]][["probs"]][j]
+                        totdist <- totdist + (d*p)
+                    }
+                }
+                loci.matrices[L,m,n] <- totdist
+                loci.matrices[L,n,m] <- totdist
+                if(progress) print(c(L, m, n))
+            }
+        }
+    }
+
+    # calculate the mean matrix across all loci
+    mean.matrix<-matrix(nrow=length(samples),ncol=length(samples),
+                        dimnames=list(samples,samples))
+    for(j in samples){
+        for(k in samples){
+       mean.matrix[j,k]<-mean(loci.matrices[,j,k], na.rm=TRUE)
+        }
+    }
+
+    # return either the mean matrix and possibly the array as well
+    if(all.distances){
+        return(list(DistByLoc=loci.matrices, MeanMatrix=mean.matrix))
+    } else {
+        return(mean.matrix)
+    }
+}
+# expect ambiguous genotypes to be a non-zero distance from themselves!
+
+assignClones <- function(d, samples=dimnames(d)[[1]], threshold=0){
+    # set up results vector
+    results <- rep(NA, length(samples))
+    names(results) <- samples
+
+    results[1] <- 1 # the first individual is clone 1
+    numclones <- 1 # there is one clone so far
+
+    # assign the rest
+    for(i in 2:length(samples)){
+        s <- samples[i] # i is the numerical index, s is the character index
+        sam <- samples[1:(i-1)] # samples that have already been assigned
+        if(all(is.na(d[s,sam]))) next # skip missing data
+
+        if(min(d[s, sam], na.rm=TRUE) > threshold){ # new clone
+            numclones <- numclones + 1
+            results[i] <- numclones
+        } else { # match to existing clone(s)
+            msam <- sam[d[s,sam] <= threshold] # samples that match
+            cl <- unique(results[msam]) # the matching clone(s)
+            cl <- cl[!is.na(cl)]
+            if(length(cl) == 1){ # these are all one clone
+                results[i] <- cl
+            } else { # multiple clones are being merged due to this individual
+                results[i] <- cl[1]
+                results[results %in% cl[2:length(cl)]] <- cl[1]
+            }
+        }
+    }
+
+    # cleanup; just give sequential numbers
+    clones <- unique(results)
+    clones <- clones[!is.na(clones)]
+    results <- match(results, clones)
+    names(results) <- samples
+
+    return(results)
+}
+

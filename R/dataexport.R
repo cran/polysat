@@ -268,7 +268,8 @@ write.GeneMapper<-function(object,file="",samples=Samples(object),
         for(s in samples){
             thesealleles<-as.character(Genotype(object, s, L))
             while((length(thesealleles) + 2) > dim(gentable)[2])
-                gentable <- data.frame(gentable, rep("", numrows))
+                gentable <- data.frame(gentable, rep("", numrows),
+                                       stringsAsFactors=FALSE)
             gentable[currentrow,3:(length(thesealleles)+2)]<-thesealleles
             currentrow<-currentrow+1
         }

@@ -1,11 +1,13 @@
-% \VignetteIndexEntry{polysat version 1.0 Tutorial Manual}
+% \VignetteIndexEntry{polysat version 1.2 Tutorial Manual}
 % \VignetteDepends{combinat, methods, polysat}
 
 \documentclass[12pt]{article}
 
 \usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows}
 
-\title{polysat version 1.0 Tutorial Manual}
+\title{polysat version 1.2 Tutorial Manual}
 \author{Lindsay V. Clark <lvclark@ucdavis.edu>\\
   UC Davis Department of Plant Sciences\\
 \url{http://openwetware.org/wiki/Polysat}}
@@ -72,6 +74,118 @@ If
 you quit and restart R, you will not have to re-install the package but
 you might need to load it again (using the \texttt{library} function
 as shown above).
+
+\section{Workflow overview}
+
+The flowcharts on the next two pages give an overview of the
+steps required for the most common analyses performed in
+\texttt{polysat}.  The first steps will always be importing or
+inputing the genotype data and making sure that the dataset contains
+information about populations and microsatellite repeat lengths.
+Different analysis and export functions are then available depending
+on whether the ploidy is known, whether the organism is autopolyploid
+or allopolyploid, and whether the selfing rate is known.
+
+\fontsize{11}{15}
+\tikzstyle{decision} = [diamond, draw, text width=7em, text badly
+centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, text width=10em, text centered,
+rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, circle, fill=black, node distance = 3cm,
+minimum height=2em]
+\begin{tikzpicture}
+\node at (0,0) [block] (import) {Import genotype data using a
+  \texttt{read} function, or start from scratch using \texttt{new} and
+  \texttt{editGenotypes}.};
+\node at (5, 0) [block] (summary) {Check dataset with \texttt{summary}.};
+\node at (10, 0) [block] (gendiv) {Analysis with \texttt{assignClones}
+or \texttt{genotypeDiversity}};
+\node at (0, -3) [block] (binary) {Convert to presence/absence
+  (\texttt{genbinary} class) for analysis or export.};
+\node at (5,-3) [block] (usatnts) {Add population and locus
+  information (\texttt{PopNames}, \texttt{PopInfo},
+  \texttt{Usatnts}).};
+\node at (10,-3) [block] (matrix1) {Calculate genetic distances
+  between individuals with \texttt{meandistance.matrix}.};
+\node at (10,-7) [block] (downstream) {Downstream analysis such as
+  Principal Coordinate Analysis or Neighbor Joining.};
+\node at (5, -7) [decision] (plimport) {Were ploidies imported with
+  the dataset?};
+\node at (0, -7) [decision] (plknown) {Do you know the ploidies?};
+\node at (5, -11) [cloud] (plfilled) {};
+\node at (1.9, -9.9) [block] (ploidies) {Add ploidy info with
+  \texttt{Ploidies} function.};
+\node at (-.6, -13) [block] (plest) {Use \texttt{estimatePloidy} function.};
+% \node at (5, -14) [block] (mating) {Use \texttt{clonalScore} and
+%  related functions to determine reproductive mode.};
+\node at (8.5, -10.5) [decision] (allo) {Is organism allopolyploid?};
+\node at (11, -14) [block] (isauto) {See Flowchart 2.};
+\node at (0, -15.5) [block] (alloexport) {Export tetraploid data to
+  ATetra, Tetra, or Tetrasat software.};
+
+\path [line] (import) |- (summary);
+\path [line] (summary) -- (usatnts);
+\path [line] (usatnts) |- (matrix1);
+\path [line] (matrix1) -- (gendiv);
+\path [line] (matrix1) -- (downstream);
+\path [line] (usatnts) -- (binary);
+\path [line] (usatnts) -- (plimport);
+\path [line] (plimport) -- node[above] {no} (plknown);
+\path [line] (plimport) -- node[right] {yes} (plfilled);
+\path [line] (plknown) -- node[right] {yes} (ploidies);
+\path [line] (ploidies) |- (plfilled);
+\path [line] (plknown) -- node[left] {no} (plest);
+\path [line] (plest) -- (plfilled);
+% \path [line] (plfilled) -- (mating);
+\path [line] (plfilled) -- (allo);
+\path [line] (allo) -- node[above] {no} (isauto);
+\path [line] (allo) |- node[below] {yes} (alloexport);
+
+\end{tikzpicture}
+
+Flowchart 1.  Functions for allopolyploid or autopolyploid data.
+
+\begin{tikzpicture}
+\node at (5,0) [block] (isauto) {Continued from Flowchart 1.};
+\node at (0, -4) [block] (autoexport) {Export to Structure, SPAGeDi,
+  GenoDive, or POPDIST software.};
+\node at (10, -4) [decision] (self) {Does each population have one,
+  even numbered ploidy, and is the self fertilization rate known?};
+\node at (4, -7) [block] (simplefreq) {Use \texttt{simpleFreq} to
+  estimate allele frequencies.};
+\node at (10, -10) [block] (desilva) {Use \texttt{deSilvaFreq} to
+  estimate allele frequencies.};
+\node at (10, -13) [block] (spagfreq) {Export allele frequencies to
+  SPAGeDi.};
+\node at (5, -10) [cloud] (freq) {};
+\node at (0, -10) [block] (adegenet) {Export allele frequencies to
+  \texttt{adegenet}.};
+\node at (2.5, -12) [block] (calcfst) {Get distances between
+  populations with \texttt{calcFst}.};
+\node at (5, -14.5) [block] (matrix2) {Calculate genetic distances
+  between individuals using \texttt{meandistance.matrix2}.};
+\node at (10, -16) [block] (gendiv) {Analysis with \texttt{assignClones}
+or \texttt{genotypeDiversity}};
+\node at (5, -17) [block] (analysis) {Downstream analysis.};
+
+\path [line] (isauto) -- (autoexport);
+\path [line] (isauto) -- (self);
+\path [line] (self) -- node[left] {no} (simplefreq);
+\path [line] (self) -- node[left] {yes} (desilva);
+\path [line] (desilva) -- (spagfreq);
+\path [line] (desilva) -- (freq);
+\path [line] (simplefreq) -- (freq);
+\path [line] (freq) -- (adegenet);
+\path [line] (freq) -- (calcfst);
+\path [line] (freq) -- (matrix2);
+\path [line] (matrix2) -- (analysis);
+\path [line] (matrix2) -- (gendiv);
+\path [line] (calcfst) |- (analysis);
+\end{tikzpicture}
+
+Flowchart 2.  Functions for autopolyploid data only.
+\fontsize{12}{15}
 
 \section{Getting Started: A Tutorial}
 \subsection{Creating a dataset}
@@ -267,6 +381,9 @@ was not part of the
 simulation that generated this dataset, the latter measure works
 better here for distinguishing populations.
 
+If your data are autopolyploid, also see \texttt{?meandistance.matrix2}
+for another method of calculating inter-individual distances.
+
 \subsubsection{Working with subsets of the data}
 It is likely that you will want to perform some analyses on just a
 subset of your data.  There are several ways to accomplish this in
@@ -325,7 +442,7 @@ Allele frequencies are estimated in the example below.  The example
 then uses these allele
 frequencies to calculate pairwise Wright's $F_{ST}$ \cite{nei73}
 values, first using all loci and then just two of the loci.  See Section
-\ref{sec:popstat} for important information about allele
+\ref{sec:allelefreq} for important information about allele
 frequency estimation.
 
 \begin{Schunk}
@@ -845,6 +962,35 @@ returned.  There is also a \texttt{maxl} argument to indicate the
 threshold for \texttt{Bruvo.distance} to skip calculations that are
 too computationally intensive (see \texttt{?Bruvo.distance}).
 
+A second means of calculating inter-individual distances is provided
+with polysat 1.2 and is called \texttt{meandistance.matrix2}.  Whereas
+\texttt{meandistance.matrix} passes genotypes directly to
+\texttt{distmetric} with each allele present in only one copy,
+\texttt{meandistance.matrix2} uses ploidy, selfing rate, and allele
+frequencies to calculate the probabilities that a given ambiguous
+genotype represents any possible unambiguous genotype.  Unambiguous
+genotypes are then passed to \texttt{distmetric}.  The distance is
+a weighted average across all possible combinations of unambiguous
+genotypes.  There is no advantage to using \texttt{Lynch.distance} with
+this function, but it may give improved results for
+\texttt{Bruvo.distance} or a user-defined distance measure.
+
+\begin{Schunk}
+\begin{Sinput}
+> testmat4 <- meandistance.matrix2(simgen, samples=samToUse, freq=simfreq,
++                                  self=0.2)
+\end{Sinput}
+\end{Schunk}
+
+<<echo=FALSE>>=
+testmat4 <- as.matrix(read.table("vignettebuild/testmat4.txt"))
+@
+<<echo=TRUE, fig=TRUE>>=
+pca4 <- cmdscale(testmat4)
+plot(pca4[,1], pca4[,2], col=c("red", "blue")[PopInfo(simgen)[samToUse]],
+     main="Bruvo distance with meandistance.matrix2")
+@
+
 Besides the \texttt{cmdscale} function for performing Principal
 Coordinate Analysis on the resulting matrix, you may want to create a
 histogram to view the distribution of distances, or you may want to
@@ -895,9 +1041,39 @@ As before, you can use \texttt{cmdscale} to perform Principal
 Coordinate Analysis and \texttt{plot} to visualize the results.
 Differences between plots reflect the effects of excluding loci.
 
+\subsubsection{Determining groups of asexually-related samples}
+\label{sec:assignclones}
+
+Very similarly to the software GenoType \cite{meirmans04}, polysat can use a
+matrix of inter-individual distances to assign samples to groups of
+asexually-related individuals.  This analysis can be performed on any
+matrix of distances calculated with \texttt{meandistance.matrix},
+\texttt{meandistance.matrix2}, or a user-defined function that
+produces matrices in the same format.  As in GenoType, a histogram
+such as those produced above may be useful for determining a distance
+threshold for distinguishing sexually- and asexually-related pairs of
+individuals.  The data in \texttt{simgen} were simulated in a
+sexually-reproducing population, but let's pretend for the moment that
+there was some asexual reproduction, and we saw a bimodal distribution
+of distances with a cutoff of 0.2 between modes.
+
+<<>>=
+clones <- assignClones(testmat, samples=paste("A", 1:100, sep=""),
+                       threshold=0.2)
+clones
+@
+
+Some of the individuals with similar genotypes have been assigned to
+the same clonal group.
+
+Diversity statistics based on genotype frequencies are also available;
+see section \ref{sec:genofreq}.
+
 \subsection{Population statistics}
 \label{sec:popstat}
 
+\subsubsection{Allele frequencies}
+\label{sec:allelefreq}
 There are two functions in polysat for estimating allele
 frequencies.  If all of your individuals are the same, even-numbered
 ploidy and if you have a reasonable estimate of the selfing rate in
@@ -955,7 +1131,8 @@ frequencies in the format that is read by SPAGeDi.
 write.freq.SPAGeDi(simfreq, usatnts=Usatnts(simgen), file="SPAGfreq.txt")
 @
 
-The R package \texttt{adegenet} can perform a number of calculations
+The R package \texttt{adegenet}\cite{jombart08} can perform a number of
+calculations
 from allele frequencies, including five inter-population distance
 measures as well as Correspondance Analysis.  The allele frequency
 tables produced by \texttt{polysat} can be converted to a format that
@@ -968,6 +1145,39 @@ gpsimfreq <- freq.to.genpop(simfreq)
 The object \texttt{gpsimfreq} that you just created can now be passed
 to the function \texttt{genpop} as the \texttt{tab} argument.  See
 \texttt{?freq.to.genpop} for example code.
+
+\subsubsection{Genotype frequencies}
+\label{sec:genofreq}
+For asexual organisms, you many want to calculate statistics based on
+the frequencies of genotypes in your populations.  Two popular
+statistics for this, the Shannon index \cite{shannon48} and Simpson index
+\cite{simpson49}, are provided with polysat.  The function
+\texttt{genotypeDiversity} calculates either of these statistics or any
+user-defined statistic that can be calculated from a vector of
+frequencies.  \texttt{genotypeDiversity} uses the function
+\texttt{assignClones} internally, so the same \texttt{threshold}
+argument may be set to allow for mutation or scoring error, or to
+group individuals by a larger distance threshold.  This function
+examines loci individiually as well as the mean distance across all
+loci.  Where ordinary allelic diversity statistics are not
+available due to allele copy number ambiguity, genotype diversity
+statistics for individual loci may be useful.
+
+\begin{Schunk}
+  \begin{Sinput}
+> testmat5 <- meandistance.matrix(simgen, all.distances=TRUE)
+  \end{Sinput}
+\end{Schunk}
+
+<<echo=FALSE>>=
+load("vignettebuild/testmat5.RData")
+@
+<<>>=
+simdiv <- genotypeDiversity(simgen, d=testmat5, threshold=0.2, index=Shannon)
+simdiv
+simdiv2 <- genotypeDiversity(simgen, d=testmat5, threshold=0.2, index=Simpson)
+simdiv2
+@
 
 \section{Functions for allopolyploid data}
 
@@ -1052,7 +1262,14 @@ same logic, \texttt{Lynch.distance} will only be appropriate if the
 two homeologous genomes have no alleles in common at a given locus.
 If either of these distance measures are appropriate for your data,
 see the description of the \texttt{meandistance.matrix} function in
-sections \ref{sec:gsinddist} and \ref{sec:inddist}.
+sections \ref{sec:gsinddist} and \ref{sec:inddist}.  The
+\texttt{meandistance.matrix2} function is never appropriate under
+allopolyploid inheritance, since it assumes random segregation of
+alleles when calculating genotype probabilities.
+
+Assuming a distance matrix can be calculated using
+\texttt{meandistance.matrix}, all downstream analyses (principal
+coordinate analysis, clone assignment, genotype diversity) are appropriate.
 
 The \texttt{estimatePloidy} function works equally well on
 autopolyploids and allopolyploids.
@@ -1112,11 +1329,10 @@ should be written to the file, and whether quotation marks should be
 used for character strings.
 
 \section{How to cite polysat}
-We are revising an article for Molecular Ecology Resources:
 
 Clark, LV and Jasieniuk, M.  {\sc polysat}: an R package for polyploid
 microsatellite analysis.  \emph{Molecular Ecology Resources}
-(accepted, in revision).
+11(3):562--566.
 
 Feel free to email me at lvclark@ucdavis.edu with any questions,
 comments, or bug reports!
@@ -1163,6 +1379,10 @@ HUBISZ, M. J., FALUSH, D., STEPHENS, M. and PRITCHARD,
 J. K. 2009. Inferring weak population structure with the assistance of
 sample group information. \emph{Molecular Ecology Resources}, 9, 1322-1332.
 
+\bibitem{jombart08}
+  JOMBART, T. 2008.  adegenet: a R package for the multivariate
+  analysis of genetic markers.  \emph{Bioinformatics}, 24, 1403-1405.
+
 \bibitem{liao08}
 LIAO, W. J., ZHU, B. R., ZENG, Y. F. and ZHANG, D. Y. 2008. TETRA: an
 improved program for population genetic analysis of allotetraploid
@@ -1188,7 +1408,15 @@ organisms. \emph{Molecular Ecology Notes}, 4, 792-794.
     of the United States of America} 70, 3321-3323.
 
 \bibitem{pritchard00}
-PRITCHARD, J. K., STEPHENS, M. and DONNELLY, P. 2000. Inference of population structure using multilocus genotype data. \emph{Genetics}, 155, 945-959.
+PRITCHARD, J. K., STEPHENS, M. and DONNELLY, P. 2000. Inference of population
+structure using multilocus genotype data. \emph{Genetics}, 155, 945-959.
+
+\bibitem{shannon48}
+  SHANNON, C. E. 1948. A mathematical theory of communication.
+\emph{Bell System Technical Journal}, 27, 379-423 and 623-656.
+
+\bibitem{simpson49}
+  SIMPSON, E. H. 1949. Measurement of diversity.  \emph{Nature}, 163, 688.
 
 \bibitem{tomiuk09}
   TOMIUK, J. GULDGRANDTSEN, B. AND LOESCHCKE, B.  2009.  Genetic

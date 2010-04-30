@@ -1,3 +1,34 @@
+Changes in version 1.2-0
+
+The internal functions .G, .indexg, .genlist, .ranmul, and .selfmat have been
+added.  Previously, these existed only within the environment of the
+deSilvaFreq function.  They have been moved to the polysat package environment
+in order to be used for the calculation of genotype probabilities in
+additional functions (i.e. meandistance.matrix2).
+
+Functions genotypeProbs and meandistance.matrix2 have been added.  This allows
+ambiguous genotypes to be dealt with in a more sophisticated way, calculating
+the probabiliity of each possible unambiguous genotype based on allele
+frequencies and selfing rate.
+
+Functions assignClones, genotypeDiversity, Shannon, and Simpson have been added.
+These use distance matrices to assign individuals to clonal groups, and
+calculate diversity indices based on genotype frequencies.
+
+Bruvo.distance function: Before any calculation is done, the function checks
+to see if usatnt is NA.  If so, an error message is given telling the user
+to fill in the Usatnts slot.  The error that the function would previously
+give in this case was not particularly informative.
+
+deSilvaFreq function: Now checks to see if the 'self' argument is missing
+before performing any calculations.  This means that a more informative
+error message is given if the selfing rate is not provided.  Also, the line
+smatt <- smat/smatdiv has been moved out of the while loop and is now
+performed immediately after the calculation of smat, to reduce computation time.
+
+Bug fix in write.GeneMapper.  It can now write files correctly when there are
+more alleles than the ploidy of the individual.
+
 Changes in version 1.1-0
 
 read.POPDIST, write.POPDIST, and freq.to.genpop functions added.

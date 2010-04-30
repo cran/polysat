@@ -1,5 +1,6 @@
 \name{meandistance.matrix}
 \alias{meandistance.matrix}
+\alias{meandistance.matrix2}
 \title{Mean Pairwise Distance Matrix}
 \description{
   Given a \code{genambig} object, \code{meandistance.matrix}
@@ -12,15 +13,24 @@ meandistance.matrix(object, samples = Samples(object),
                     loci = Loci(object), all.distances=FALSE,
                     distmetric = Bruvo.distance, progress = TRUE,
                     ...)
+meandistance.matrix2(object, samples = Samples(object),
+                     loci = Loci(object),
+                     freq = simpleFreq(object, samples, loci), self = 0,
+                     all.distances = FALSE, distmetric = Bruvo.distance,
+                     progress = TRUE, ...)
 }
 \arguments{
   \item{object}{A \code{genambig} object containing the genotypes to be
     analyzed.  If \code{distmetric = Bruvo.distance}, the \code{Usatnts}
-    slot should be filled in.}
+    slot should be filled in.  For \code{meandistance.matrix2},
+    \code{Ploidies} and \code{PopInfo} are also required.}
   \item{samples}{A character vector of samples to be analyzed.  These
     should be all or a subset of the sample names used in \code{object}.}
   \item{loci}{A character vector of loci to be analyzed.  These should
     be all or a subset of the loci names used in \code{object}.}
+  \item{freq}{A data frame of allele frequencies such as that produced
+    by \code{\link{simpleFreq}} or \code{\link{deSilvaFreq}}.}
+  \item{self}{A number ranging from 0 to 1, indicating the rate of selfing.}
   \item{all.distances}{If \code{FALSE}, only the mean distance matrix will be
     returned.  If \code{TRUE}, a list will be returned containing an array of
     all distances by locus and sample as well as the mean distance matrix.}
@@ -47,12 +57,39 @@ meandistance.matrix(object, samples = Samples(object),
   to save computation time.  Since the array (and resulting mean matrix)
   is symmetrical, the distance is written to two positions in the array
   at once.
+
+  \code{meandistance.matrix} uses ambiguous genotypes exactly as they
+  are, whereas \code{meandistance.matrix2} uses
+  \code{\link{genotypeProbs}} to calculate all possible unambiguous
+  genotypes and their probabilities under random mating or partial
+  selfing.  The distance
+  between each possible pair of unambiguous genotypes for the two
+  samples is calculated with \code{distmetric} and weighted by the
+  product of the probabilities of the two gentoypes.  As you might
+  expect, \code{meandistance.matrix2} takes longer to process a given
+  \code{"genambig"} object than \code{meandistance.matrix} does.
+  Additionally, the distance between two identical ambiguous genotypes
+  will be zero when calculated with \code{meandistance.matrix}, and
+  greater than zero when calculated with \code{meandistance.matrix2},
+  due to potential differences in copy number of the alleles.
+
+  With the distance measures currently available in \pkg{polysat},
+  \code{meandistance.matrix2} exaggerates distances between individuals
+  of different ploidy as compared to \code{meandistance.matrix}.  When
+  comparing individuals of the same ploidy level, however,
+  \code{meandistance.matrix2} should be more accurate than
+  \code{meandistance.matrix}.
+
+  \code{meandistance.matrix2} does not allow a genotype to have more
+  alleles than the ploidy of the individual (as listed in the
+  \code{Ploidies} slot).
 }
 \references{
 }
 \seealso{
   \code{\link{Bruvo.distance}}, \code{\link{Lynch.distance}},
-  \code{\link{meandist.from.array}}
+  \code{\link{meandist.from.array}},
+  \code{\link{.genlist}}
 }
 \examples{
 # create a list of genotype data
@@ -78,6 +115,16 @@ mymat[[1]]["locus2",,]
 mymat[[1]]["locus3",,]
 mymat[[2]]
 
+# add addtional info needed for meandistance.matrix2
+Ploidies(mygendata) <- c(4,4,4,4)
+PopInfo(mygendata) <- c(1,1,1,1)
+
+# calculate distances taking allele freqs into account
+mymat2 <- meandistance.matrix2(mygendata, mysamples, myloci)
+mymat2
+# now do the same under selfing
+mymat3 <- meandistance.matrix2(mygendata, mysamples, myloci, self=0.3)
+mymat3
 }
 \author{Lindsay V. Clark}
 \keyword{array}

@@ -47,6 +47,20 @@
   not known whether differences in ploidy arose from genome addition or
   genome loss.  Virtual alleles are set to infinity, such that the
   geometric distance between any allele and a virtual allele is 1.
+
+  In the original publication by Bruvo \emph{et al.} (2004), ambiguous
+  genotypes were dealt with by calculating the distance for all possible
+  unambiguous genotype combinations and averaging across all of them
+  equally.  When \code{Bruvo.distance} is called from
+  \code{meandistance.matrix}, ploidy is unknown and all genotypes are
+  simply treated as if they had one copy of each allele.  When
+  \code{Bruvo.distance} is called from \code{meandistance.matrix2}, the
+  analysis is truer to the original, in that ploidy is known and all
+  possible unambiguous genotype combinations are considered.  However,
+  instead of all possible unambiguous genotypes being weighted equally,
+  in \code{meandistance.matrix2} they are weighted based on allele
+  frequencies and selfing rate, since some unambiguous genotypes are
+  more likely than others.
 }
 \value{
   A number ranging from 0 to 1, with 0 indicating identical
