@@ -1,0 +1,1383 @@
+% \VignetteIndexEntry{polysat version 0.1 Tutorial Manual}
+% \VignetteDepends{combinat, polysat}
+
+\documentclass[12pt]{article}
+
+\usepackage{hyperref}
+
+\title{polysat version 0.1 Tutorial Manual}
+\author{Lindsay V. Clark <lvclark@ucdavis.edu>\\
+  UC Davis Department of Plant Sciences\\
+\url{http://openwetware.org/wiki/Polysat}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+<<echo=false,results=hide>>=
+library(polysat)
+@
+
+\section{Introduction}
+The R package \texttt{polysat} is intended to provide useful tools for
+working with microsatellite data of any ploidy level, including
+populations of mixed ploidy.  It can convert genotype data between
+different formats, including Applied Biosystems GeneMapper\textregistered,
+binary
+presence/absence data, ATetra, Tetra/Tetrasat, GenoDive, SPAGeDi, and
+Structure.  It can also calculate pairwise genetic distances between
+samples, assist the user in estimating ploidy based on allele number,
+and calculate some simple population statistics.  Due to the
+versatility of the R programming environment and the simplicity of how
+genotypes are stored by polysat, the user may find many ways to
+interface other R functions with this package, such as Principal
+Coordinate Analysis or AMOVA.
+
+This manual is written to be accessible to beginning users of R.  If
+you are a complete novice to R, it is recommended that you read
+through \emph{An Introduction to R} (
+\url{http://cran.r-project.org/manuals.html} ) before reading this
+manual or at least have both open at the same time.  If you have the
+console open while reading the manual you can also look at the help
+files for base R functions (for example by typing \texttt{?dimnames}
+or \texttt{?\%in\%}) and also get more detailed information on polysat
+functions (e.g. \texttt{?read.GeneMapper}).
+
+\section{Obtaining and installing polysat}
+The R console and base system can be obtained at
+\url{http://www.r-project.org/ } .  Once installed, polysat and other
+packages (note that \texttt{combinat} is required for the
+\texttt{Bruvo.distance} function) can be installed and loaded from a
+drop-down menu while connected to the internet.  Alternatively, you can type
+
+\begin{Schunk}
+  \begin{Sinput}
+> install.packages("combinat")
+> install.packages("polysat")
+> library("polysat")
+\end{Sinput}
+\end{Schunk}
+
+into the R console.  If you instead download the package from CRAN
+using your web browser, you can then install it at your operating system's
+command prompt using \texttt{R CMD INSTALL} or in R using the function
+\texttt{install.packages}, and load it in R using the function
+\texttt{library}.  (See
+\url{http://cran.r-project.org/doc/manuals/R-intro.html#Packages} for
+more information; the procedure is the same for any R package.)  If
+you quit and restart R you will not have to re-install the package but
+you might need to load it again (using the \texttt{library} function
+as shown above).
+
+\section{Notes on autopolyploids vs. allopolyploids}
+Although polysat is equally able to store autopolyploid and
+allopolyploid data, it does not distinguish between the two.  The user
+should take assumptions of the analysis into consideration depending on
+the inheritance pattern of the loci.  In an autopolyploid, all alleles for a
+given microsatellite marker truly belong to one locus.  In an
+allopolyploid, a microsatellite marker represents two or more loci
+(barring mutations that cause the primers to only amplify in one
+genome), and there is no simple way to know which alleles came from
+which locus without genotyping progeny of every individual.  Recent
+software for allotetraploids \cite{vanpuyvelde10, liao08, markwith06}
+use iterative processes to assign alleles to one disomic genome or the
+other and calculate population statistics from there.  At this time,
+no functions in polysat perform this type of partitioning.  In
+particular, the functions \texttt{Bruvo.distance} and
+\texttt{estimate.freqs} make more sense in autopolyploids than
+allopolyploids.  They
+may still produce biologically meaningful results when run on
+allopolyploid data, although the user should keep in mind that
+allopolyploid data violate the assumptions that all alleles for a given
+marker belong to one interbreeding pool and can be closely related to
+each other through mutation.
+
+\section{How genotypes are stored in polysat}
+The object that is used universally in polysat to store genotypes is a
+two-dimensional list of vectors.  Samples are the first dimension of
+the list, and the names of the first dimension are the names of the
+samples.  Loci are the second dimension of the list, and likewise the
+names of the second dimension are the names of the loci.  Each vector
+contains all unique alleles for a given sample at a given locus.  It
+is generally assumed that the alleles are integers, although some
+polysat functions may still work on numeric and character vectors.  It
+is also assumed that copy number is never known for partially
+heterozygous genotypes, and so a vector of alleles contains each
+allele only once and is no longer than needed to contain the alleles
+in this way.  This allows polysat the flexibility of processing
+samples of any ploidy, storing samples of mixed ploidy in the same
+project, and estimating ploidy when it is unknown.  Missing data are
+represented by vectors of length 1, containing a symbol of the user's
+choosing, \texttt{-9} by default.  The user may find ways of manipulating the
+genotype object that are not provided in the polysat package, since
+the object can be created and accessed using the base R package.
+
+If you want to follow along with the examples below, first type
+
+<<echo=TRUE>>=
+data(testgenotypes)
+data(FCRinfo)
+@
+
+into your console to load the objects \texttt{testgenotypes} and
+\texttt{FCRinfo}.  All
+of the commands in this manual can also be found in a file called
+``samplesession.R'' in the ``demo'' directory of the polysat package.
+This file can be opened with a text editor, or if you use Emacs Speaks
+Statistics you can open the file there and send it to R one line at a
+time.
+
+Alternatively, skip ahead to the chapter on importing data from files
+so that you can work with your own data.
+
+\subsection{Examples of how to view and index genotype data}
+If you type the name of the genotype object (either from the example
+data or your own) into the console in order to view it, you will get
+something like this (sample names in this example start with
+\texttt{FCR} and locus names start with \texttt{RhCBA}):
+
+<<echo=TRUE>>=
+testgenotypes
+@
+
+As you can see, this does not allow you to view the alleles, except
+for genotypes that only have one allele.  However, you can see the
+sample names and locus names that are used to index the genotype data.
+You can also see that the alleles are all stored as integers, and you
+can see how many alleles each genotype has.
+
+Say you just wanted to view the genotypes for RhCBA23:
+
+<<echo=TRUE>>=
+testgenotypes[,"RhCBA23"]
+@
+
+At the locus RhCBA23, FCR1 has the alleles 102 and 111, FCR2 has the
+alleles 102, 104, 106, 111, 123, and 125, and so on with the other
+individuals.
+
+Say you just wanted to view the genotypes for FCR14:
+
+<<echo=TRUE>>=
+testgenotypes["FCR14",]
+@
+
+You may just want to analyze a subset of your data:
+
+<<echo=TRUE>>=
+myloci <- c("RhCBA23","RhCBA28")
+mysamples <- c("FCR1","FCR2","FCR3","FCR4","FCR5","FCR6","FCR7",
+               "FCR8","FCR9","FCR10")
+subgenotypes <- testgenotypes[mysamples, myloci]
+subgenotypes
+@
+
+When providing your genotype data as an argument for any of the
+functions in polysat, you may choose to just index a subset of the
+data in the argument rather than making a separate object to contain
+the subset beforehand.  For example,
+
+<<echo=TRUE, results=hide>>=
+testdist <- meandistance.matrix(testgenotypes[mysamples, myloci])
+@
+
+Many of the functions also have optional \texttt{samples} and
+\texttt{loci} arguments, which work exactly the same way for choosing
+a subset of the data.  For example,
+
+<<echo=TRUE, results=hide>>=
+testdist <- meandistance.matrix(testgenotypes, samples = mysamples,
+                                loci = myloci)
+@
+
+would give exactly the same results as the similar assignment above.
+
+You might just want to exclude a few samples without having to type
+the full names of all other samples:
+
+<<echo=TRUE>>=
+to.exclude <- c("FCR11","FCR12")
+all.samples <- dimnames(testgenotypes)[[1]]
+to.analyze <- all.samples[!all.samples %in% to.exclude]
+to.analyze
+testgenotypes[to.analyze,]
+@
+
+Note: a common error to get when indexing is a \texttt{subscript out
+  of bounds} error.  This means that you used a character string that
+is not actually found in the \texttt{dimnames} of the object, like
+\texttt{FRC15} or \texttt{FCR21} in this example.
+
+\subsection{Missing data}
+If a genotype is missing at a particular sample and locus, its vector
+will be of length one, containing a missing data symbol of the user's
+choice.  This symbol is \texttt{-9} by default.  Any polysat function
+that deals with missing data has an argument called \texttt{missing}
+(or sometimes \texttt{missingin} and \texttt{missingout} if there are
+options for both input and output) that can be used to indicate that
+the genotype object uses a different symbol for missing data, or that
+a different symbol should be used in the object to be created.
+
+The function \texttt{find.missing.gen} can be used to search a
+genotype object and list the locus and sample name of any genotype
+that is missing.  For example:
+
+<<echo=TRUE>>=
+find.missing.gen(testgenotypes)
+@
+
+\subsection{Examples of how to edit genotype data in R}
+Since all of the loci in the above example have similar names, you may
+want to shorten their names.
+
+<<echo=TRUE>>=
+dimnames(testgenotypes)[[2]] <- c("C15","C23","C28")
+@
+
+There may be errors in the genotypes that you want to fix:
+
+<<echo=TRUE>>=
+testgenotypes[["FCR5","C15"]] <- 208
+testgenotypes[["FCR19","C23"]]
+testgenotypes[["FCR19","C23"]] <- c(98, 125)
+testgenotypes[["FCR2","C23"]]
+testgenotypes[["FCR2","C23"]][4] <- 112
+testgenotypes["FCR5",]
+testgenotypes["FCR19",]
+testgenotypes["FCR2",]
+@
+
+Why am I using double brackets to index single genotypes, while I use
+single brackets to index larger subsets of the data?  Compare the
+output of the two methods when used to access a single genotype:
+
+<<echo=TRUE>>=
+testgenotypes["FCR7","C28"]
+testgenotypes[["FCR7","C28"]]
+@
+
+The first is a list of length one containing the vector.  The second
+is the vector itself.  In most cases you want the latter.  Note that
+you cannot use double brackets to index multiple elements of the list:
+
+\begin{Schunk}
+  \begin{Sinput}
+> testgenotypes[["FCR7",]]
+\end{Sinput}
+\begin{Soutput}
+Error in testgenotypes[["FCR7", ]] : invalid subscript type 'symbol'
+\end{Soutput}
+\end{Schunk}
+
+\subsection{Editing genotype data using spreadsheet software}
+If you have a lot of edits to make or simply don't like the
+command-line approach to genotype editing, you may prefer to export
+the data to a tab-delimited text file, edit it in spreadsheet software
+or a text editor, then import it back into R.  polysat can export and
+import data in a variety of formats (see chapters on exporting and
+importing).  Personally, I think that the easiest for viewing and
+editing data is the Applied Biosystems GeneMapper\textregistered
+format, which is a simple table that stores each allele in its own
+cell.
+
+<<echo=TRUE>>=
+write.GeneMapper(testgenotypes, "genotypestoedit.txt")
+@
+
+Now open the file ``genotypestoedit.txt'' in your favorite spreadsheet
+program.  If you don't know where your home directory is and can't
+find the file, try again but type in the full file path that you want
+to write to,
+e.g. \texttt{"C:\char92\char92Users\char92\char92lvclark\char92\char92Documents\char92\char92genotypestoedit.txt"}.
+
+Save the file once you've finished editing it, then import it back:
+
+<<echo=TRUE>>=
+testgenotypes <- read.GeneMapper("genotypestoedit.txt")
+@
+
+or
+
+\begin{Schunk}
+  \begin{Sinput}
+> testgenotypes <-read.GeneMapper(
++     "C:\\Users\\lvclark\\Documents\\genotypestoedit.txt")
+  \end{Sinput}
+\end{Schunk}
+
+\subsection{Merging genotype objects}
+If you have multiple genotype objects that you would like to combine
+into one, there are a couple methods that you could use.
+
+If both genotype objects have the same set of samples, but different
+loci, the \texttt{cbind} function can combine them.  If you are
+concerned that the samples might be in a different order or that one
+object has a few samples (that you want to get rid of) that the other
+object doesn't have, you can subscript both objects with the same
+vector of sample names.
+
+<<echo=FALSE>>=
+mygenotypes1 <- array(list(1,2,3,4), dim=c(2,2),
+                      dimnames=list(c("ind1", "ind2"), c("loc1", "loc2")))
+mygenotypes2 <- array(list(5,6,7,8), dim=c(2,2),
+                      dimnames=list(c("ind1", "ind2"), c("loc3", "loc4")))
+@
+
+\begin{Schunk}
+  \begin{Sinput}
+> mygenotypes1 <- array(list(1,2,3,4), dim=c(2,2),
++     dimnames=list(c("ind1", "ind2"), c("loc1", "loc2")))
+> mygenotypes2 <- array(list(5,6,7,8), dim=c(2,2),
++     dimnames=list(c("ind1", "ind2"), c("loc3", "loc4")))
+  \end{Sinput}
+\end{Schunk}
+
+<<echo=TRUE>>=
+mygenotypes1
+mygenotypes2
+mysamples <- c("ind1","ind2")
+mygenotypes <- cbind(mygenotypes1[mysamples,], mygenotypes2[mysamples,])
+mygenotypes
+@
+
+Likewise, if the two objects have the same set of loci, but different
+samples, they can be combined using \texttt{rbind}.
+
+<<echo=FALSE>>=
+mygenotypes2 <- array(list(9,10,11,12), dim=c(2,2),
+                      dimnames=list(c( "ind3", "ind4"), c("loc1", "loc2")))
+@
+
+\begin{Schunk}
+  \begin{Sinput}
+> mygenotypes2 <- array(list(9,10,11,12), dim=c(2,2),
++     dimnames=list(c( "ind3", "ind4"), c("loc1", "loc2")))
+\end{Sinput}
+\end{Schunk}
+
+<<echo=TRUE>>=
+mygenotypes2
+myloci <- c("loc1","loc2")
+mygenotypes <- rbind(mygenotypes1[,myloci], mygenotypes2[,myloci])
+mygenotypes
+@
+
+If the situation is more complicated (e.g. you would use
+\texttt{cbind} but one object has a few samples that the other doesn't,
+and you want to preserve these samples in the final object), you can export
+the objects to separate GeneMapper files, then import them together into
+one object.
+
+<<echo=TRUE>>=
+write.GeneMapper(mygenotypes1, "mygenotypes1.txt")
+write.GeneMapper(mygenotypes2, "mygenotypes2.txt")
+mygenotypes <- read.GeneMapper(c("mygenotypes1.txt", "mygenotypes2.txt"))
+@
+
+\subsection{Creating a genotype object from scratch}
+If you are storing your genotype data in a format that is not already
+read by one of the functions in polysat (see next chapter), you may
+want to write your own function to read your genotype data, or you may
+want to make a genotype object manually.  All of the functions in
+polysat that produce a genotype object first establish the structure
+of the list and fill it with missing data symbols:
+
+<<echo=TRUE>>=
+# Here is some example dataset info:
+missing <- -9
+samples <- c("ind1","ind2","ind3")
+loci <- c("loc1","loc2")
+# And here is a universal way to set up the genotype list:
+gendata <- array(list(missing), dim = c(length(samples), length(loci)),
+                 dimnames = list(samples, loci))
+gendata
+@
+
+Then the list is filled with genotype data.  You can do this one
+genotype at a time, although it would take awhile for any reasonably
+sized dataset:
+
+<<echo=TRUE>>=
+gendata[["ind1","loc1"]] <- c(100,102,104)
+@
+
+Or you can write a loop structure to fill the whole list at once:
+
+\begin{Schunk}
+  \begin{Sinput}
+> for(L in loci){
+>   for(s in samples){
+>     # Insert code here that would find the genotype of sample
+>     # s at locus L in your data structure and convert it to a
+>     # vector called thesealleles.
+>     gendata[[s,L]] <- thesealleles
+>   }
+> }
+    \end{Sinput}
+\end{Schunk}
+
+If you are going to do this, some useful functions to look into are
+\texttt{read.table}, \texttt{readLines}, \texttt{substring}, and
+\texttt{strsplit}.  However, hopefully you will be able to import your
+data using one of the functions below!
+
+\section{Importing data from files}
+Each of these functions creates a genotype object as described in the
+previous chapter.  If the file format also contains information about
+which samples belong to which populations (\texttt{read.ATetra},
+\texttt{read.Tetrasat}, \texttt{read.GenoDive}), the function also
+produces a vector, as long as the number of samples and with the
+sample names as the vector names, containing the population number for
+each sample.  \texttt{read.Structure} and \texttt{read.SPAGeDi} can
+optionally produce data frames of population and other information
+contained in their respective file types.
+
+Before you try any of these functions, you should make sure that you
+know in general how to read files into R in your operating system.
+You should be able to get \texttt{read.table} to work on a simple
+spreadsheet-like text file (tab-delimited or CSV).  The file path is
+always a character string in quotes.  Note that because backslash is
+an escape character in R, and is used in Windows file paths, you will
+have to write the backslash twice each time if you are using Windows.
+For example,
+\texttt{"C:\char92\char92Users\char92\char92lvclark\char92\char92Documents\char92\char92mygenotypedata.txt"}.
+
+All of the data import functions are summarized below, but more
+information on each can be found in their respective help files.
+
+\subsection{Arguments universal to the functions}
+The file path to be read is a character string as in other R functions
+for reading files.  This is the first argument, and the only required
+argument, for all of the functions below except for
+\texttt{dominant.to.codominant} (see below for more details on this
+function).  \texttt{read.GeneMapper} allows a character vector of any
+length, because it can read multiple files and combine them into one
+genotype object.
+
+Most of the functions allow the user to specify which symbol is used
+to represent missing data in the genotype object produced.  This is
+\texttt{-9} by default.  Since the ATetra format does not allow for
+missing data, there is no such argument for \texttt{read.ATetra}.  The
+argument is called \texttt{missing} for \texttt{read.GeneMapper},
+\texttt{dominant.to.codominant}, \texttt{read.Tetrasat},
+\texttt{read.SPAGeDi}, and \texttt{read.Genodive}, and
+\texttt{missingout} for \texttt{read.Structure}.
+
+
+\subsection{Function summaries}
+\subsubsection*{read.GeneMapper}
+This function reads one or multiple files in the Applied Biosystems
+GeneMapper\textregistered Genotypes Table format.  \texttt{dimnames}
+for the genotype object are derived from the ``Sample Name'' and
+``Marker'' columns.  There can be as many ``Allele'' columns as needed
+to contain the data.  Missing data should be indicated by deleting the
+row (if the function does not find a row for a particular sample-locus
+combination, it fills in the missing data symbol) or by filling in the
+missing data symbol in the first allele position.  Alleles are kept in
+whatever format they are found in the file (fragment length in
+nucleotides if using the default naming scheme of GeneMapper).  It is
+recommended that all alleles be converted to integers before reading
+the file.
+
+Usage: \texttt{read.GeneMapper(infiles, missing = -9)}
+
+\subsubsection*{read.ATetra}
+This function reads a file formatted for the software ATetra
+\cite{vanpuyvelde10}.  The data should be tetraploid, and no missing
+data are allowed.  The function returns a list containing two elements:
+\texttt{PopData} and \texttt{Genotypes}.  The first is a vector, with
+names equal to the
+sample names, containing the population number of each sample.  The
+second is the genotype object.  Alleles are converted to integers but
+otherwise stay the same as they are found in the file.
+
+Usage: \texttt{read.ATetra(infile)}
+
+\subsubsection*{read.Tetrasat}
+This function reads a file formatted for the software Tetrasat
+\cite{markwith06} or Tetra \cite{liao08}.  The data should be
+tetraploid, and missing data are recognized as a column completely made
+up of white space.  A list is returned in the same format as that
+returned by \texttt{read.ATetra}.  The two-digit alleles from the file
+are converted to integers in the genotype object.  Completely
+homozygous genotypes are written as the same allele four times in the
+file, but the allele is only stored once in the genotype object.
+
+Usage: \texttt{read.Tetrasat(infile, missing = -9)}
+
+\subsubsection*{read.GenoDive}
+This function reads a file formatted for the software GenoDive
+\cite{meirmans04} (or more recently
+\url{http://www.bentleydrummer.nl/software/software/GenoDive.html} ).
+The format is similar to that for GenePop, but any ploidy is allowed.
+Missing data are recognized as genotypes consisting only of zeros.
+Alleles are converted to integers but otherwise kept the same.  A list
+is returned in the same format as that returned by
+\texttt{read.ATetra} and \texttt{read.Tetrasat}.
+
+Usage: \texttt{read.GenoDive(infile, missing = -9)}
+
+\subsubsection*{read.Structure}
+This function reads a file formatted for the software Structure
+\cite{falush07, falush03, pritchard00, hubisz09}.  At this time the
+ONEROWPERIND option is not supported by polysat, so each
+microsatellite locus must have only one column in the file, and each
+individual must have \emph{n} rows, where \emph{n} is the ploidy of the file.
+Otherwise, the function is flexible as to whether or not sample names
+and marker names are present in the file, how many rows and columns
+are used in addition to those containing genotype data, the character
+used to delimit fields, the symbol used to indicate missing data, and
+the ploidy of the file.  If marker names are used, they must be
+aligned with their corresponding columns (so that the data would look
+right if opened in a spreadsheet program).  If there are extra columns
+present, there is the option to return the data in these as a data
+frame.  For each sample and locus, repeated alleles are ignored, and
+missing data symbols are ignored unless the entire genotype is
+missing.
+
+Usage: \texttt{read.Structure(infile, missingin = -9, missingout = -9,
+sep = "\t", markernames = TRUE, labels = TRUE, extrarows = 1,
+extracols = 0, ploidy = 4, getexcols = FALSE)}
+
+\subsubsection*{read.SPAGeDi}
+This function reads files formatted for the software SPAGeDi
+\cite{hardy02}.  The user can specify whether a character is used to
+delimit alleles and which character it is, although this must be the
+same across all genotypes in the file.  The function otherwise
+interprets codominant genotypes the same way that the software does.
+By default the function will only return a genotype object, but there
+are also options to return a vector containing the ploidy of each
+sample, or a data frame containing the categories and spatial
+coordinates of all samples.
+
+Usage: \texttt{read.SPAGeDi(infile, allelesep = "/",
+  returncatspatcoord = FALSE, returnploidies = FALSE, missing = -9)}
+
+\subsubsection*{dominant.to.codominant}
+This function does not read a file directly, but instead takes data in
+the form of an array or matrix of binary allele presence/absence data.
+A file containing this type of data in a table-like format can be read
+by \texttt{read.table} and converted to a matrix by
+\texttt{as.matrix}, then processed by \texttt{dominant.to.codominant}.
+The function also requires information about which columns represent
+which alleles and which loci.  This information can be contained in
+the column names themselves, with the locus name and allele number
+separated by a period (or other character as specified by the user).
+The user can alternatively provide the function with a data frame
+listing loci and alleles in the same order that they are found in the
+columns of the genotype array.  The symbol that indicates the presence
+of an allele is 1 by default but can be changed by the user.  If the
+function does not find any alleles present for a particular sample and
+locus, it inserts the missing data symbol into that position in the
+genotype object.
+
+Usage: \texttt{dominant.to.codominant(domdata, colinfo = NULL,
+samples = dimnames(domdata)[[1]], missing = -9,
+allelepresent = 1, split= ".")}
+
+\subsection{Examples of usage}
+In the polysat package there is a folder called ``extdata'' which
+contains sample input files in all of the above formats.  Open the
+files with formats of interest to you to see what they look like.  To
+run these examples, you should figure out the file path to this folder
+and edit the examples below accordingly.  (Note that I use
+\texttt{paste} to simplify the creation of multiple similar file
+paths, but this is not a necessary part of using these functions.  Try
+\texttt{paste} by itself or look at its help file if you are confused
+about what it does.)
+
+\begin{Schunk}
+  \begin{Sinput}
+> folderpath <- "C:\\Users\\lvclark\\R\\win-library\\2.11\\polysat\\extdata\\"
+> ATdata <- read.ATetra(paste(folderpath,"ATetraExample.txt",sep=""))
+> ATdata
+\end{Sinput}
+\begin{Soutput}
+$PopData
+ CMW1  CMW2  CMW3  CMW4  CMW5  FCR4  FCR7 FCR14 FCR15 FCR16 FCR17
+    1     1     1     1     1     2     2     2     2     2     2
+
+$Genotypes
+      CBA15     CBA23
+CMW1  Integer,4 Integer,4
+CMW2  Integer,4 Integer,2
+CMW3  Integer,4 Integer,2
+CMW4  Integer,4 Integer,4
+CMW5  Integer,4 Integer,3
+FCR4  Integer,4 Integer,2
+FCR7  Integer,4 Integer,3
+FCR14 Integer,4 Integer,2
+FCR15 Integer,4 Integer,3
+FCR16 Integer,4 Integer,2
+FCR17 Integer,4 Integer,2
+\end{Soutput}
+\begin{Sinput}
+> Tetdata <- read.Tetrasat(paste(folderpath,"tetrasatExample.txt",sep=""))
+> Tetdata
+\end{Sinput}
+\begin{Soutput}
+$PopData
+ BCRHE1 BCRHE10  BCRHE2  BCRHE3  BCRHE4  BCRHE5  BCRHE6  BCRHE7  BCRHE8  BCRHE9
+      1       1       1       1       1       1       1       1       1       1
+    BR1    BR10     BR2     BR3     BR4     BR5     BR6     BR7     BR8     BR9
+      2       2       2       2       2       2       2       2       2       2
+
+$Genotypes
+        A1_Gtype  A10_Gtype B1_Gtype  D7_Gtype  D9_Gtype  D12_Gtype
+BCRHE1  Integer,2 4         Integer,2 2         3         Integer,2
+BCRHE10 Integer,2 4         7         2         Integer,2 Integer,2
+BCRHE2  4         4         Integer,2 2         Integer,3 Integer,2
+BCRHE3  4         4         2         Integer,2 3         Integer,2
+BCRHE4  4         4         Integer,2 Integer,2 3         Integer,3
+BCRHE5  4         4         Integer,2 2         3         Integer,3
+BCRHE6  Integer,2 4         Integer,2 2         3         7
+BCRHE7  Integer,2 4         Integer,2 -9        3         7
+BCRHE8  Integer,2 4         Integer,2 Integer,2 3         Integer,2
+BCRHE9  Integer,2 4         Integer,2 2         3         Integer,2
+BR1     Integer,2 4         5         2         3         Integer,2
+BR10    Integer,3 4         Integer,2 2         3         Integer,2
+BR2     Integer,3 4         7         2         3         9
+BR3     Integer,3 4         7         2         3         9
+BR4     Integer,3 4         7         Integer,2 3         10
+BR5     Integer,3 4         7         2         3         10
+BR6     Integer,2 4         Integer,2 Integer,2 3         10
+BR7     Integer,2 4         Integer,2 2         3         Integer,3
+BR8     Integer,3 4         7         2         3         Integer,3
+BR9     Integer,2 4         7         2         3         7
+\end{Soutput}
+\begin{Sinput}
+> GDdata <- read.GenoDive(paste(folderpath,"genodiveExample.txt",sep=""))
+> GDdata
+\end{Sinput}
+\begin{Soutput}
+$PopData
+  John   Paul George  Ringo   Yoko
+     1      1      2      2      1
+
+$Genotypes
+       loc1      loc2
+John   Integer,2 Integer,2
+Paul   2         -9
+George 1         Integer,2
+Ringo  Integer,3 Integer,2
+Yoko   Integer,2 Integer,2
+\end{Soutput}
+\begin{Sinput}
+> GMdata <- read.GeneMapper(paste(folderpath,"GeneMapperCBA",
++      c("15.txt","23.txt","28.txt"), sep=""))
+> GMdata
+\end{Sinput}
+\begin{Soutput}
+      RhCBA15   RhCBA23   RhCBA28
+FCR1  207       Integer,2 Integer,6
+FCR2  Integer,2 Integer,6 Integer,6
+FCR3  208       Integer,3 Integer,8
+FCR4  Integer,4 Integer,2 Integer,3
+FCR5  207       Integer,3 Integer,8
+FCR6  208       Integer,3 Integer,8
+FCR7  Integer,4 Integer,3 Integer,5
+FCR8  Integer,4 Integer,2 Integer,3
+FCR9  Integer,4 Integer,2 Integer,3
+FCR10 Integer,3 98        Integer,3
+FCR11 Integer,4 Integer,2 Integer,3
+FCR12 Integer,4 Integer,2 Integer,3
+FCR13 Integer,4 Integer,2 Integer,3
+FCR14 Integer,4 Integer,2 Integer,3
+FCR15 Integer,4 Integer,3 182
+FCR16 Integer,4 Integer,2 Integer,3
+FCR17 Integer,4 Integer,2 Integer,3
+FCR18 Integer,4 Integer,2 Integer,3
+FCR19 Integer,4 Integer,2 Integer,3
+FCR20 Integer,4 Integer,2 Integer,3
+\end{Soutput}
+\begin{Sinput}
+> Structdata <- read.Structure(paste(folderpath, "structureExample.txt",
++     sep=""), extracols = 1, ploidy = 8, getexcols = TRUE)
+> Structdata
+\end{Sinput}
+\begin{Soutput}
+$ExtraCol
+      V1
+WIN1B  1
+MCD1   2
+MCD2   2
+MCD3   2
+
+$Genotypes
+      RhCBA15   RhCBA23   RhCBA28   RhCBA14   RUB126    RUB262    RhCBA6
+WIN1B Integer,4 Integer,2 Integer,4 Integer,3 Integer,4 208       Integer,3
+MCD1  208       Integer,6 Integer,6 Integer,4 Integer,3 Integer,6 151
+MCD2  208       Integer,4 Integer,7 Integer,4 Integer,2 Integer,4 150
+MCD3  197       Integer,2 Integer,2 Integer,2 Integer,2 213       Integer,2
+      RUB26
+WIN1B 99
+MCD1  Integer,3
+MCD2  Integer,3
+MCD3  Integer,2
+\end{Soutput}
+\begin{Sinput}
+> Spagdata <- read.SPAGeDi(paste(folderpath, "spagediExample.txt", sep=""),
++                          returnploidies = TRUE)
+> Spagdata
+\end{Sinput}
+\begin{Soutput}
+$Indploidies
+i1 i2 i3 i4 i5 i6 i7 i8
+ 4  4  2  4  2  4  4  4
+
+$Genotypes
+   locA      locB
+i1 Integer,3 Integer,2
+i2 Integer,4 Integer,3
+i3 8         Integer,2
+i4 Integer,3 22
+i5 Integer,2 Integer,2
+i6 Integer,4 Integer,2
+i7 -9        Integer,4
+i8 Integer,4 Integer,2
+
+> Spagdata$Genotypes[,"locA"]
+$i1
+[1]  4 16 17
+
+$i2
+[1] 10 13 18 19
+
+$i3
+[1] 8
+
+$i4
+[1]  6 12 14
+
+$i5
+[1] 12 15
+
+$i6
+[1] 10 16 17 19
+
+$i7
+[1] -9
+
+$i8
+[1]  9 12 14 17
+\end{Soutput}
+\begin{Sinput}
+> Domdata <- as.matrix(read.table(paste(folderpath, "dominantExample.txt",
++     sep=""), header=TRUE,sep="\t",row.names=1))
+> Domdata
+\end{Sinput}
+\begin{Soutput}
+     ABC1.123 ABC1.126 ABC1.129 ABC1.132 ABC1.135 ABC2.201 ABC2.203 ABC2.205
+ind1        1        0        0        0        1        0        1        1
+ind2        0        1        1        0        1        1        1        1
+ind3        0        0        0        0        0        0        0        1
+     ABC2.207 ABC2.209
+ind1        0        0
+ind2        1        0
+ind3        0        1
+\end{Soutput}
+\begin{Sinput}
+> ConvDomdata <- dominant.to.codominant(Domdata)
+> ConvDomdata
+\end{Sinput}
+\begin{Soutput}
+     ABC1      ABC2
+ind1 Numeric,2 Numeric,2
+ind2 Numeric,3 Numeric,4
+ind3 -9        Numeric,2
+\end{Soutput}
+\end{Schunk}
+% $
+
+\section{Exporting genotype data to files}
+If you just want to save a copy of the genotype object to be opened
+again in R later, it is probably simplest to use the \texttt{save}
+function to make an .RData file, then use \texttt{load} when you want
+to restore the object.  Under normal circumstances the object should
+be saved in your R workspace anyway, but you may want a backup copy or
+a copy that you can open on another computer.  Use the functions below
+if you want to be able to open the genotype data in a text editor,
+spreadsheet program, or other population genetic software.
+
+Polysat has functions to write data files formatted for GenoDive,
+Structure, SPAGeDi, ATetra, and Tetrasat/Tetra.  It can also write
+files in a similar format to GeneMapper genotypes tables, as well as
+create matrices of binary allele presence/absence data that can either
+be further manipulated in R or written to files using
+\texttt{write.table}.
+
+For more information and examples of the use of these functions beyond
+what is provided in this chapter, see their respective help files.
+
+\subsection{Arguments universal to the functions}
+All of the functions below take as the first argument (and the only
+required argument) a genotype object as described earlier in this
+manual (``How genotypes are stored in polysat'').  This argument is
+referred to in the help files as \texttt{gendata}.   If only a subset
+of \texttt{gendata} is to be used, the samples and loci to use can
+either be specified by subscripting or by the arguments
+\texttt{samples} and \texttt{loci}.  All functions except for
+\texttt{codominant.to.dominant} have a \texttt{file} argument for specifying
+the path to which to write the file.   The file will be written to the
+console if no file path is specified (although see \texttt{sink} for
+writing all output from the console to a file).
+
+All of the functions allow the user to specify the symbol that is used
+in \texttt{gendata} to represent missing data, which is \texttt{-9} by
+default.  This is the argument \texttt{missing} in
+\texttt{write.ATetra}, \texttt{write.Tetrasat},
+\texttt{write.GenoDive}, \texttt{write.SPAGeDi}, and
+\texttt{write.Structure}, and \texttt{missingin} in
+\texttt{codominant.to.dominant}.  The Tetrasat/Tetra, SPAGeDi, and
+GenoDive programs have specific ways of representing missing data,
+which are followed by their corresponding functions.  ATetra does not
+allow missing data, although \texttt{write.ATetra} will simply leave
+the corresponding allele slots blank and print a warning if there is
+missing data in \texttt{gendata}.  In \texttt{write.Structure} and
+\texttt{write.GeneMapper}, the same missing data symbol is used in the
+output as input.  In \texttt{codominant.to.dominant}, the missing data
+symbol to be used in the binary matrix that is produced can be
+specified by \texttt{missingout}.
+
+Some file formats contain information about which samples belong to
+which populations.  \texttt{write.ATetra}, \texttt{write.Tetrasat},
+\texttt{write.SPAGeDi}, and \texttt{write.GenoDive} have an argument
+called \texttt{popinfo}, which should be an integer vector (or in some
+cases a character vector is acceptable) containing a population number
+for each sample.  If \texttt{popinfo} is unnamed it is assumed to be
+in the same order as \texttt{samples} (or
+\texttt{dimnames(gendata)[[1]]} by default), or it can be named with
+sample names.  In the latter case it is okay for \texttt{samples} to
+be a subset of \texttt{names(popinfo)}, but not vice versa.  ATetra
+and GenoDive also use population names, and so \texttt{write.ATetra}
+and \texttt{write.GenoDive} have an argument called \texttt{popnames}
+that takes a character vector of names for the populations, ordered by
+the numbers used to represent them in \texttt{popinfo}.  Because
+Structure will take other optional information for each sample in
+addition to population identity, the argument \texttt{extracols} for
+\texttt{write.Structure} is a two dimensional array, where the first
+dimension is indexed by sample name and the second dimension
+represents the columns to be placed before the locus columns.
+Similarly, \texttt{write.SPAGeDi} has an argument called
+\texttt{spatcoord} that takes a data frame of spatial coordinates to
+include in the file.
+
+Both \texttt{write.Structure} and \texttt{write.SPAGeDi} require
+information about the ploidy of each sample, which is specified by the
+integer vector \texttt{indploidies}.  Like \texttt{popinfo}, this can
+either be named using sample names or should be in the same order as
+\texttt{samples}.
+
+A first line containing comments about the data is allowed in ATetra,
+Tetrasat/Tetra, and GenoDive formats, and so the argument
+\texttt{commentline} is used in the corresponding functions to specify
+the character string to use in this line.
+
+polysat allows alleles to be stored as fragment lengths rather than
+repeat numbers, and so alleles must be converted to repeat numbers for
+Tetrasat/Tetra, SPAGeDi, and GenoDive formats.  The argument \texttt{usatnts}
+is an integer vector containing the length of the repeat for each
+locus (2 for dinucleotide repeats, 3 for trinucleotide repeats, etc.)
+Note that if the alleles in the genotype object are already stored as
+repeat numbers rather than length in nucleotides, the value of \texttt{usatnts}
+for that locus should be 1.  This vector should also be named using
+the locus names.
+
+\subsection{Function summaries}
+\subsubsection*{write.Structure}
+This function creates a file to be read by the program Structure
+\cite{falush07}.  The user may specify the ploidy of each sample as
+well as the overall ploidy (number of rows per sample) of the file.
+Locus names and sample names are taken from the \texttt{dimnames} of
+the genotype object.  A RECESSIVEALLELES row is automatically inserted
+under the row of marker names and contains the missing data symbol,
+which signifies to the program that allele copy number is unknown.  An
+array containing PopData or any other columns to be used in the file
+can also be supplied to the function.  An especially useful aspect of
+the function is that it duplicates or randomly removes alleles as
+necessary to get to the right ploidy.  Sample names and other sample
+info are also duplicated for each row as required by Structure.
+Because \texttt{write.table} is used by the function to create the
+file, the user must manually delete a few fields in the upper left
+corner of the file before importing the data into Structure.
+
+Usage: \texttt{write.Structure(gendata, ploidy, file="",
+samples=dimnames(gendata)[[1]], loci=dimnames(gendata)[[2]],
+indploidies=rep(ploidy,times=length(samples)),
+extracols=NULL, missing=-9)}
+
+\subsubsection*{write.ATetra}
+This function writes a file to be read by the software ATetra
+\cite{vanpuyvelde10}.  If missing data is found in the genotype
+object, a warning is printed and all allele fields for that particular
+sample and locus are left blank.  If genotypes with more than four
+alleles are found, a warning is printed and four alleles are chosen at
+random to be included in the file.
+
+Usage: \texttt{write.ATetra(gendata, samples = dimnames(gendata)[[1]],
+loci = dimnames(gendata)[[2]], popinfo = rep(1, length(samples)),
+popnames = "onebigpop", commentline = "insert data info here",
+missing = -9, file = "")}
+
+\subsubsection*{write.Tetrasat}
+This function writes a file to be read by the software Tetrasat
+\cite{markwith06} or Tetra \cite{liao08}.  If missing data is
+encountered, the genotype field for that particular sample and locus
+is left blank.  If a genotype has more than four alleles, a warning is
+printed and four alleles are chosen at random to be included in the
+file.  Alleles are also converted to repeat numbers by dividing by the
+number supplied in \texttt{usatnts}, and if necessary a multiple of 10
+is subtracted from all alleles at a locus so that all alleles can be
+represented by two digits.  If a genotype has only one allele, the
+allele is repeated four times to represent a fully homozygous
+genotype.  If the missing data symbol is encountered in the genotype
+object, that particular genotype is represented in the file by white
+space.
+
+Usage: \texttt{write.Tetrasat(gendata,
+commentline = "insert data description here",
+samples = dimnames(gendata)[[1]], loci = dimnames(gendata)[[2]],
+popinfo = rep(1, length(samples)),
+usatnts = rep(2, length(loci)), file = "", missing = -9)}
+
+\subsubsection*{write.GenoDive}
+This function writes a file to be read by the software GenoDive
+\cite{meirmans04} (or more recently
+\url{http://www.bentleydrummer.nl/software/software/GenoDive.html} ).
+Alleles can be represented by either two or three digits as specified
+by the user.  Alleles are converted to repeat numbers by dividing by
+the numbers supplied in \texttt{usatnts}, and if necessary a multiple
+of 10 is subtracted from all alleles at a locus so that all alleles
+can be represented by the specified number of digits.  If a missing
+data symbol is found in the genotype object, zeros are written in the
+corresponding position in the file.
+
+Usage: \texttt{write.GenoDive(gendata, popnames = "onebigpop",
+commentline = "file description goes here", digits = 2,
+file = "", samples = dimnames(gendata)[[1]],
+loci = dimnames(gendata)[[2]],
+popinfo = rep(1, times = length(samples)),
+usatnts = rep(2, times = length(loci)), missing=-9)}
+
+\subsubsection*{write.GeneMapper}
+This function writes a file in a similar format to the Genotypes
+Tables exported from Applied Biosystems GeneMapper\textregistered.
+This format is not read by any other population genetic software (to
+the best of my knowledge) but may be convenient for viewing and
+editing the data.  The same missing data symbol is used in the file as
+is encountered in the genotype object.  The file produced is a
+tab-delimited table containing columns for Sample Name, Marker, and
+Alleles.
+
+Usage: \texttt{write.GeneMapper(gendata, file = "",
+samples = dimnames(gendata)[[1]],
+loci = dimnames(gendata)[[2]])}
+
+\subsubsection*{write.SPAGeDi}
+This function writes a file readable by the software SPAGeDi \cite{hardy02}.
+Population identities as specified in \texttt{popinfo} will be put
+into a column labeled ``Cat'' for categories to be used by the
+program.  Any number of spatial coordinates can be used, and are given
+to the function as a data frame with sample names as row names.  (As
+with \texttt{popinfo} and \texttt{indploidies}, the data frame will
+be assumed to be in the same order as \texttt{samples} if unnamed, or
+if named the data frame will be automatically subscripted by
+\texttt{samples} before being used by the function.)  By default, a
+category column and two spatial coordinate columns are written to the
+file, to later be edited by the user with spreadsheet software.
+Alleles are converted from fragment length to repeat number similarly
+to the conversion in \texttt{write.GenoDive}.  Since ploidy is
+reflected in how the genotypes are written for SPAGeDi, there is an
+\texttt{indploidies} argument similar to that for
+\texttt{write.Structure}.  The first line of the file is generated
+automatically from the data provided.  If latitude and longitude are
+used for spatial coordinates, the user will have to manually change the
+third number in the first line from 2 to -2.  There is currently not
+an option
+to write distance classes to the second line of the file using this
+function, but the user can easily make this modification after the
+file is written.
+
+Usage: \texttt{write.SPAGeDi(gendata, samples = dimnames(gendata)[[1]],
+              loci = dimnames(gendata)[[2]],
+              indploidies = rep(4, length(samples)),
+              popinfo = rep(1, length(samples)), allelesep = "/",
+              digits = 2, file = "",
+              spatcoord = data.frame(X = rep(1, length(samples)),
+                                     Y = rep(1, length(samples)),
+                                     row.names = samples),
+              usatnts = rep(2, length(loci)), missing = -9)}
+
+\subsubsection*{codominant.to.dominant}
+This function creates a matrix of binary data indicating the presence
+or absence of each allele in each sample.  The matrix can then be
+saved to a text file using the \texttt{write.table} or \texttt{write}
+function.  The
+matrix may also be of use directly in R, for example in an AMOVA
+analysis using the \texttt{ade4} package.  The user has control over
+which symbols are used to represent missing data (both in the input
+and the output) and the presence or absence of alleles (in the
+output).  In addition to the matrix of genotype data, a data frame can
+optionally be returned containing locus names and allele numbers in
+the same order as the columns of the matrix.
+
+Usage: \texttt{codominant.to.dominant(gendata, makecolinfo = FALSE,
+  allelepresent = 1, alleleabsent = 0, missingin = -9,
+missingout = -9, loci = dimnames(gendata)[[2]],
+samples = dimnames(gendata)[[1]])}
+
+\subsection{Examples of usage}
+<<echo=TRUE>>=
+mypopinfo <- FCRinfo$Species
+names(mypopinfo) <- row.names(FCRinfo)
+mypopinfo
+mypopnames <- c("A","B","C")
+
+write.GeneMapper(testgenotypes, file="GMout.txt")
+write.Structure(testgenotypes, ploidy=8, file="Structout.txt",
+                indploidies=c(8,8,8,4,8,8,rep(4,14)),
+                extracols=array(mypopinfo, dim=c(20,1),
+                                dimnames=list(names(mypopinfo),"PopData")))
+write.GenoDive(testgenotypes, mypopnames, file="GDout.txt",popinfo=mypopinfo)
+tetrasamples <- names(mypopinfo)[mypopinfo != 1]
+tetrasamples
+write.ATetra(testgenotypes, popinfo=mypopinfo,
+             popnames=mypopnames,
+             file="ATout.txt", samples=tetrasamples)
+write.Tetrasat(testgenotypes, popinfo=mypopinfo[tetrasamples],
+               file="TSout.txt", samples=tetrasamples)
+write.SPAGeDi(testgenotypes, file="SpagOut.txt", popinfo=mypopinfo,
+              spatcoord=data.frame(Lat=c(rep(43.943,6), rep(43.957,14)),
+              Long=c(rep(-122.768,6), rep(-122.755,14))),
+              indploidies=c(8,8,8,4,8,8,rep(4,14)))
+Domdata <- codominant.to.dominant(testgenotypes)
+write.table(Domdata, file="Domout.txt")
+@
+
+\section{Individual-level statistics}
+
+\subsection{Create a matrix of pairwise distances}
+Typically, this will be done using the function
+\texttt{meandistance.matrix}, which calls
+\texttt{distance.matrix.1locus}, which in turn calls a function to
+calculate a distance given two genotypes (\texttt{Bruvo.distance} by
+default).  \texttt{meandistance.matrix} has its own arguments and can
+also pass arguments on to the functions that it calls.  These
+arguments are:
+
+\begin{description}
+\item[\texttt{gendata}] The only required argument.  A genotype object in
+the standard two-dimensional list of vectors format.
+
+\item[\texttt{samples}]  A character vector of samples to analyze.  This
+must be a subset of \texttt{dimnames(gendata)[[1]]}.
+
+\item[\texttt{loci}] A character vector of loci to analyze.  This must be a
+subset  of \texttt{dimnames(gendata)[[2]]}.
+
+\item[\texttt{all.distances}] Boolean.  If \texttt{TRUE}, a
+three-dimensional array of pairwise distances by locus will be
+produced in addition to the mean distance matrix.
+
+\item[\texttt{distmetric}] The function to be used to calculate genetic
+distance.  This is \texttt{Bruvo.distance} by default, which
+incorporates a stepwise mutation model \cite{bruvo04}.   A distance
+metric included in polysat that uses an infinite allele model
+\cite{lynch90} is \texttt{Lynch.distance}.
+
+\item[\texttt{usatnts}] An integer vector containing the repeat length of
+each locus, if this information is used by \texttt{distmetric}.  For
+example, 2 would indicate dinucleotide repeats, 3 would indicate
+trinucleotide repeats, and 1 would indicate mononucleotide repeats.
+Note that if the alleles are already stored in terms of repeat number
+rather than nucleotide length, 1 should be used!  The names of the
+vector are the same as the names of loci and the second dimension of
+\texttt{gendata}.
+
+\item[\texttt{missing}] The symbol that is used to indicate missing data in
+the genotype object (\texttt{-9} by default).  In the array of
+pairwise distances by locus, \texttt{NA} will be inserted into
+positions where either sample has missing data.  When these distances
+are averaged to create the mean distance matrix, any \texttt{NA}
+values will be ignored.
+
+\item[\texttt{progress}] Boolean.  If \texttt{TRUE}, print sample names
+after each pairwise distance calculation is performed.  If evaluation
+is expected to take a long time, this can be useful for monitoring the
+progress.
+
+\item[\texttt{maxl}] If distmetric is \texttt{Bruvo.distance}, and two
+genotypes both contain more than this number of alleles, the
+calculation will be skipped and \texttt{NA} will be written to that
+position in the array instead (similarly to when there is missing
+data).  This is \texttt{9} by default, and is intended to save
+processing time by skipping a few rare distance calculations that
+would be too computationally intensive.
+\end{description}
+
+\subsubsection{Examples of creating a mean distance matrix}
+To create two matrices based on the two measures of distance supplied
+with polysat:
+
+<<echo=TRUE>>=
+Bmatrix <- meandistance.matrix(testgenotypes, progress=FALSE)
+Lmatrix <- meandistance.matrix(testgenotypes, distmetric=Lynch.distance,
+                               progress=FALSE)
+@
+
+The symmetrical distance matrix that is produced by
+\texttt{meandistance.matrix} can be immediately used by other R
+functions.  For example, to view a histogram of all distances,
+
+<<echo=TRUE>>=
+hist(as.vector(Bmatrix))
+hist(as.vector(Lmatrix))
+@
+
+should produce plots that could be useful for determining distance
+thresholds between clones, populations, and species.
+
+To do a principal coordinate analysis:
+
+<<echo=FALSE>>=
+Bprcoord <- cmdscale(Bmatrix)
+Lprcoord <- cmdscale(Lmatrix)
+plot(Bprcoord[,1],Bprcoord[,2], col=FCRinfo$Plot.color,
+     pch=FCRinfo$Plot.symbol)
+plot(Lprcoord[,1],Lprcoord[,2], col=FCRinfo$Plot.color,
+     pch=FCRinfo$Plot.symbol)
+@
+
+\begin{Schunk}
+\begin{Sinput}
+> Bprcomp <- cmdscale(Bmatrix)
+> Lprcomp <- cmdscale(Lmatrix)
+> plot(Bprcomp[,1],Bprcomp[,2], col=FCRinfo$Plot.color,
+      pch=FCRinfo$Plot.symbol)
+> plot(Lprcomp[,1],Lprcomp[,2], col=FCRinfo$Plot.color,
+      pch=FCRinfo$Plot.symbol)
+\end{Sinput}
+\end{Schunk}
+
+\texttt{write.table} and \texttt{write} can be used to export the
+distance matrix for use in other software.
+
+<<echo=TRUE>>=
+write.table(Bmatrix, file="Bmatrix.txt")
+@
+
+\texttt{meandist.from.array} can take a three-dimensional array such
+as that produced when \texttt{all.distances=TRUE} and recalculate a
+mean distance matrix from it.  This could be useful, for example, if
+you want to try omitting loci from your analysis.  If
+\texttt{Bruvo.distance} skips some calculations because \texttt{maxl}
+is exceeded, you may also want to estimate these distances and fill
+them into the array manually, then recalculate the mean distance
+matrix.  See the help file for \texttt{meandist.from.array} for some
+additional functions that can help to locate missing values in the
+three-dimensional distance array.
+
+To experiment with excluding loci:
+
+<<echo=TRUE>>=
+Larray <- meandistance.matrix(testgenotypes, progress=FALSE,
+                 distmetric=Lynch.distance, all.distances=TRUE)[[1]]
+mdist15.23 <- meandist.from.array(Larray, loci=c("C15","C23"))
+mdist23.28 <- meandist.from.array(Larray, loci=c("C23","C28"))
+mdist15.28 <- meandist.from.array(Larray, loci=c("C15","C28"))
+@
+
+And from there you might want to do principal coordinate analyses on
+these three matrices as before, in order to visualize the effects of
+excluding loci.
+
+\subsection{Estimate the ploidy of samples}
+
+The function \texttt{estimate.ploidy} calculates the maximum number of
+alleles and mean number of alleles for each sample across all loci.  Its
+only required argument is a genotype object in the standard
+two-dimensional list of vectors format.  Optional arguments include
+\texttt{samples} and \texttt{loci} for specifying a subset of the
+data to be used.
+
+Using the sample data provided in the package, we would write:
+
+<<echo=TRUE>>=
+myploidies <- as.data.frame(estimate.ploidy(testgenotypes))
+myploidies
+myploidies[[3]]<-myploidies$max.alleles
+names(myploidies)[3] <- "ploidy"
+@
+
+\begin{Schunk}
+  \begin{Sinput}
+> myploidies <- edit(myploidies)
+\end{Sinput}
+\end{Schunk}
+
+This opens up a Data Editor.  In the \texttt{ploidy} column, you can
+now edit the ploidy based on what you know about the organism, for
+example if you were expecting tetraploid, hexaploid, and octoploid
+individuals.  You might also want to make a character vector
+containing species or phenotypic information for the samples, and make
+this another column of the data frame to assist with ploidy editing.
+
+\section{Population-level statistics}
+The population statistics in polysat allow for mixed ploidy
+populations.  Because of this, population sizes are measured in number
+of genomes rather than number of individuals.  For example, a
+tetraploid individual makes twice as much of a contribution to allele
+frequency as a diploid individual does, if both have the same two
+alleles at a locus.  When allele frequencies are averaged for the
+calculation of $H_T$, or an average $H_S$ value is calculated between
+two populations, the averages are weighted by the number of genomes in
+each population.
+
+\subsection{Estimating allele frequencies}
+In partially heterozygous polyploid genotypes, allele copy number is
+assumed to be unknown (as in all polysat functions), so allele
+frequencies can only be estimated and not truly calculated from the
+data.  The function \texttt{estimate.freq} assumes that in a partially
+heterozygous genotype, all alleles have an equal probability of being
+present in more than one copy.  This is of course not true, because
+some alleles are more common in the population.  The result is that
+this function should underestimate the frequencies of common alleles
+and overestimate the frequencies of rare alleles.  If these allele
+frequencies are used to calculate $F_{ST}$, then, $F_{ST}$ will be
+underestimated.  However, this should still be useful for looking at
+relative amounts of population structure within one study system.
+
+The first and only required argument for \texttt{estimate.freq} is a
+genotype object.  The default is that all individuals are in one
+population and tetraploid, although it is likely that the user will
+want to adjust this using the \texttt{popinfo} and
+\texttt{indploidies} arguments.  These arguments are named vectors
+similar to their counterparts in some of the functions for exporting
+data.  The names of both are sample names.  Each element of
+\texttt{popinfo} is the population number or population name for that
+particular sample.  The \texttt{indploidies} argument should contain
+an integer for each sample indicating the ploidy of the sample.
+\texttt{missing}, \texttt{samples}, and \texttt{loci} arguments are
+also provided and are used in the same way as in other polysat
+functions to specify the symbol used to represent missing data, a
+subset of samples to be used, and a subset of loci to be used,
+respectively.
+
+\texttt{estimate.freq} produces a data frame with one row per
+population.  The first column is called \texttt{Genomes} and contains
+the number of genomes in each population.  All remaining columns
+represent alleles (one column per allele) and contain allele
+frequencies.  The column names are the locus name and allele name
+separated by a period.  Within one population and locus, all allele
+frequencies will total to 1.  The frequencies are the estimated number
+of copies of the allele in the population divided by the total number
+of genomes in the population.  If a sample has missing data at a
+locus, the number of genomes in that population is reduced accordingly
+for that locus in the calculation.
+
+Using the data provided in the package:
+
+<<echo=TRUE>>=
+mypopinfo <- FCRinfo$Species
+names(mypopinfo) <- row.names(FCRinfo)
+myploidies <- c(8,8,8,4,8,8,rep(4,14))
+names(myploidies) <- row.names(FCRinfo)
+freqtable <- estimate.freq(testgenotypes, popinfo=mypopinfo,
+                           indploidies=myploidies)
+freqtable[,1:10]
+@
+
+In addition to calculating $F_{ST}$ (see below), see the stats
+function \texttt{dist} for other measures of distance that can be
+calculated from this type of numerical data.  The software SPAGeDi
+\cite{hardy02} can also calculate a variety of distances between
+populations.
+
+\subsection{Calculating pairwise $F_{ST}$}
+The function \texttt{calcFst} will calculate pairwise $F_{ST}$
+\cite{nei73} values
+between populations based on a data frame of genomes per population
+and allele frequencies per population.  The data frame produced by
+\texttt{estimate.freq} can be passed directly to \texttt{calcFst}.  If
+only a subset of populations or loci from the data frame should be
+used, these can be specified by vectors with the arguments
+\texttt{pops} and \texttt{loci}.
+
+Continuing the above example:
+
+<<echo=TRUE>>=
+testfsts<-calcFst(freqtable)
+testfsts
+@
+
+\section{How to cite polysat}
+We are submitting an article to Molecular Ecology Resources:
+
+Clark, L and Jasieniuk, M.  {\sc polysat}: an R package for polyploid
+microsatellite analysis.  \emph{Molecular Ecology Resources} (in
+review).
+
+\begin{thebibliography}{99}
+  \bibitem{bruvo04}
+    BRUVO, R., MICHIELS, N. K., D'SOUZA, T. G. and SCHULENBURG,
+    H. 2004. A simple method for the calculation of microsatellite
+    genotype distances irrespective of ploidy level. \emph{Molecular
+      Ecology}, 13, 2101-2106.
+
+  \bibitem{falush03}
+FALUSH, D., STEPHENS, M. and PRITCHARD, J. K. 2003. Inference of
+population structure using multilocus genotype data: Linked loci and
+correlated allele frequencies. \emph{Genetics}, 164, 1567-1587.
+
+\bibitem{falush07}
+FALUSH, D., STEPHENS, M. and PRITCHARD, J. K. 2007. Inference of
+population structure using multilocus genotype data: dominant markers
+and null alleles. \emph{Molecular Ecology Notes}, 7, 574-578.
+
+\bibitem{hardy02}
+HARDY, O. J. and VEKEMANS, X. 2002. SPAGEDi: a versatile computer
+program to analyse spatial genetic structure at the individual or
+population levels. \emph{Molecular Ecology Notes}, 2, 618-620.
+
+\bibitem{hubisz09}
+HUBISZ, M. J., FALUSH, D., STEPHENS, M. and PRITCHARD,
+J. K. 2009. Inferring weak population structure with the assistance of
+sample group information. \emph{Molecular Ecology Resources}, 9, 1322-1332.
+
+\bibitem{liao08}
+LIAO, W. J., ZHU, B. R., ZENG, Y. F. and ZHANG, D. Y. 2008. TETRA: an
+improved program for population genetic analysis of allotetraploid
+microsatellite data. \emph{Molecular Ecology Resources}, 8, 1260-1262.
+
+\bibitem{lynch90}
+LYNCH, M. 1990. THE SIMILARITY INDEX AND DNA FINGERPRINTING. \emph{Molecular
+Biology and Evolution}, 7, 478-484.
+
+\bibitem{markwith06}
+MARKWITH, S. H., STEWART, D. J. and DYER, J. L. 2006. TETRASAT: a
+program for the population analysis of allotetraploid microsatellite
+data. \emph{Molecular Ecology Notes}, 6, 586-589.
+
+\bibitem{meirmans04}
+MEIRMANS, P. G. and VAN TIENDEREN, P. H. 2004. GENOTYPE and GENODIVE:
+two programs for the analysis of genetic diversity of asexual
+organisms. \emph{Molecular Ecology Notes}, 4, 792-794.
+
+\bibitem{nei73}
+  NEI, M.  1973.  Analysis of gene diversity in subdivided
+  populations.  \emph{Proceedings of the National Academy of Sciences
+    of the United States of America} 70, 3321-3323.
+
+\bibitem{pritchard00}
+PRITCHARD, J. K., STEPHENS, M. and DONNELLY, P. 2000. Inference of population structure using multilocus genotype data. \emph{Genetics}, 155, 945-959.
+
+\bibitem{vanpuyvelde10}
+VAN PUYVELDE, K., VAN GEERT, A. and TRIEST, L. 2010. ATETRA, a new software program to analyse tetraploid microsatellite data: comparison with TETRA and TETRASAT. \emph{Molecular Ecology Resources}, 10, 331-334.
+
+
+\end{thebibliography}
+
+\end{document}

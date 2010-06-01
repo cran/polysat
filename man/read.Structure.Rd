@@ -1,0 +1,171 @@
+\name{read.Structure}
+\alias{read.Structure}
+\title{
+Read Genotypes and Other Data from a Structure File
+}
+\description{
+\code{read.Structure} creates a genotype object of the standard polysat
+format by reading a text file formatted for the software Structure.
+Optionally, it can also extract PopData and any other extra columns from
+the file.
+}
+\usage{
+read.Structure(infile, missingin = -9, missingout = -9, sep = "\t",
+markernames = TRUE, labels = TRUE, extrarows = 1, extracols = 0,
+ploidy = 4, getexcols = FALSE)
+}
+\arguments{
+  \item{infile}{
+Character string.  The file path to be read.
+}
+  \item{missingin}{
+The symbol used to represent missing data in the Structure file.
+}
+  \item{missingout}{
+The symbol to be used to represent missing data in the genotype object
+that is produced.
+}
+  \item{sep}{
+The character used to delimit the fields of the Structure file (tab by default).
+}
+  \item{markernames}{
+Boolean, indicating whether the file has a header containing marker names.
+}
+  \item{labels}{
+Boolean, indicating whether the file has a column containing sample names.
+}
+  \item{extrarows}{
+Integer.  The number of extra rows that the file has, not counting
+marker names.  This could include rows for recessive alleles,
+inter-marker distances, or phase information.
+}
+  \item{extracols}{
+Integer.  The number of extra columns that the file has, not counting
+sample names (labels).  This could include PopData, PopFlag, LocData,
+Phenotype, or any other extra columns.
+}
+  \item{ploidy}{
+    Integer.  The ploidy of the file, i.e. how many rows there are for each
+    individual.
+}
+  \item{getexcols}{
+Boolean, indicating whether the function should return the data from any
+extra columns.
+}
+}
+\details{
+The current version of \code{read.Structure} does not support the
+ONEROWPERIND option in the file format.  Each locus must only have one
+column.  If your data is in ONEROWPERIND format, it should be fairly
+simple to manipulate it in a spreadsheet program so that it can be read
+by \code{read.GeneMapper} instead.
+
+\code{read.Structure} uses \code{read.table} to initially read the file into a
+data frame, then extracts information from the data frame.  Because of
+this, any header rows (particularly the one containing marker names)
+should have leading tabs (or spaces if \code{sep=" "}) so that the marker
+names align correctly with their corresponding genotypes.  You should be
+able to open the file in a spreadsheet program and have everything align
+correctly.
+
+If the file does not contain sample names, set \code{labels=FALSE}.  The
+samples will be numbered instead, and if you like you can edit the
+\code{dimnames} of the genotype object after the fact if you have the
+sample names stored separately.  Likewise, if \code{markernames=FALSE}, the
+loci will be numbered automatically by the column names that
+\code{read.table} creates, but these can also be edited after the fact.
+}
+\value{
+If \code{getexcols=FALSE}, the function returns only a genotype object in the
+standard polysat format.  This is a two-dimensional list, where samples
+are represented in the first dimension and loci in the second
+dimension.  Each element of the list is an integer vector containing all
+unique alleles for a given locus and sample.
+
+If \code{getexcols=TRUE}, the function returns a list with two elements.  The
+first, named ExtraCol, is a data frame, where the row names are the
+sample names and each column is one of the extra columns from the file
+(but with each sample only once instead of being repeated \code{ploidy}
+number of times).  The second element is named Genotypes and is the
+genotype object described above.
+}
+\references{
+  \url{http://pritch.bsd.uchicago.edu/structure_software/release_versions/v2.3.3/structure_doc.pdf}
+
+  Hubisz, M. J., Falush, D., Stephens, M. and Pritchard, J. K. (2009)
+  Inferring weak population structure with the assistance of sample
+  group information.  \emph{Molecular Ecology Resources} \bold{9},
+  1322-1332.
+
+  Falush, D., Stephens, M. and Pritchard, J. K.  (2007)
+  Inferences of population structure using multilocus genotype data:
+  dominant markers and null alleles.  \emph{Molecular Ecology Notes}
+  \bold{7}, 574-578.
+}
+\author{
+Lindsay V. Clark
+}
+\note{
+
+}
+
+%% ~Make other sections like Warning with \section{Warning }{....} ~
+
+\seealso{
+\code{\link{write.Structure}}, \code{\link{read.GeneMapper}},
+\code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
+\code{\link{read.GenoDive}}, \code{\link{dominant.to.codominant}},
+\code{\link{read.SPAGeDi}}
+}
+\examples{
+# create a file to read (normally done in a text editor or spreadsheet
+# software)
+cat("\t\tRhCBA15\tRhCBA23\tRhCBA28\tRhCBA14\tRUB126\tRUB262\tRhCBA6\tRUB26",
+    "\t\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "WIN1B\t1\t197\t98\t152\t170\t136\t208\t151\t99",
+    "WIN1B\t1\t208\t106\t174\t180\t166\t208\t164\t99",
+    "WIN1B\t1\t211\t98\t182\t187\t184\t208\t174\t99",
+    "WIN1B\t1\t212\t98\t193\t170\t203\t208\t151\t99",
+    "WIN1B\t1\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "WIN1B\t1\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "WIN1B\t1\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "WIN1B\t1\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "MCD1\t2\t208\t100\t138\t160\t127\t202\t151\t124",
+    "MCD1\t2\t208\t102\t153\t168\t138\t207\t151\t134",
+    "MCD1\t2\t208\t106\t157\t180\t162\t211\t151\t137",
+    "MCD1\t2\t208\t110\t159\t187\t127\t215\t151\t124",
+    "MCD1\t2\t208\t114\t168\t160\t127\t224\t151\t124",
+    "MCD1\t2\t208\t124\t193\t160\t127\t228\t151\t124",
+    "MCD1\t2\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "MCD1\t2\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "MCD2\t2\t208\t98\t138\t160\t136\t202\t150\t120",
+    "MCD2\t2\t208\t102\t144\t174\t145\t214\t150\t132",
+    "MCD2\t2\t208\t105\t148\t178\t136\t217\t150\t135",
+    "MCD2\t2\t208\t114\t151\t184\t136\t227\t150\t120",
+    "MCD2\t2\t208\t98\t155\t160\t136\t202\t150\t120",
+    "MCD2\t2\t208\t98\t157\t160\t136\t202\t150\t120",
+    "MCD2\t2\t208\t98\t163\t160\t136\t202\t150\t120",
+    "MCD2\t2\t208\t98\t138\t160\t136\t202\t150\t120",
+    "MCD3\t2\t197\t100\t172\t170\t159\t213\t174\t134",
+    "MCD3\t2\t197\t106\t174\t178\t193\t213\t176\t132",
+    "MCD3\t2\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "MCD3\t2\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "MCD3\t2\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "MCD3\t2\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "MCD3\t2\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    "MCD3\t2\t-9\t-9\t-9\t-9\t-9\t-9\t-9\t-9",
+    sep="\n",file="structtest.txt")
+
+# view the file
+cat(readLines("structtest.txt"), sep="\n")
+
+# read the structure file into genotypes and populations
+testdata <- read.Structure("structtest.txt", extracols=1,
+                           ploidy=8, getexcols=TRUE)
+
+# examine the results
+testdata$ExtraCol
+testdata$Genotypes
+testdata$Genotypes["WIN1B",]
+}
+\keyword{ file }

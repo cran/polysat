@@ -1,0 +1,15 @@
+citHeader("An article will be submitted to Molecular Ecology Resources:")
+
+citEntry(entry="Article",
+	title = "polysat: an R package for polyploid microsatellite analysis",
+        author = personList(as.person("L.V. Clark"),as.person("M. Jasieniuk")),
+	journal = "Molecular Ecology Resources",
+  	year = "2011",
+	volume = "",
+	pages = "",
+	number = "",
+        textVersion =
+        "Clark, L.V. and Jasieniuk, M.  polysat: an R package for polyploid microsatellite analysis.  Molecular Ecology Resources (in review)."
+         )
+
+

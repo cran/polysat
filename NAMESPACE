@@ -1,0 +1,8 @@
+export(Bruvo.distance, distance.matrix.1locus, estimate.ploidy,
+       meandistance.matrix, read.GeneMapper, write.Structure,
+       read.ATetra, read.Tetrasat, codominant.to.dominant,
+       dominant.to.codominant, read.GenoDive, write.GenoDive,
+       write.ATetra, write.Tetrasat, read.Structure,
+       write.GeneMapper, calcFst, estimate.freq, find.missing.gen,
+       meandist.from.array, find.na.dist, find.na.dist.not.missing,
+       Lynch.distance, write.SPAGeDi, read.SPAGeDi)
