@@ -1,3 +1,29 @@
+Changes in version 1.2-1
+
+Bruvo2.distance function has been added.  This calculates an alternate version
+of the distance measure of Bruvo et al. (2004), under the models of genome
+loss and/or addition.
+
+genotypeDiversity function: Default value of d has been changed to being
+calculated with Lynch.distance, since the default threshold value is 0 and
+Lynch.distance is faster.
+
+Bruvo.distance function: If both genotypes are equal to the missing data value,
+the distance returned is now NA instead of 0.
+
+read.GenoDive: Now correctly finds the "Individual" column, and uses it to
+extract sample names, whether or not a "Clones" column is included.
+
+read.GeneMapper: Sample and locus names may now consist of any combination of
+letters and numbers.  (There had been a bug that caused an error if samples or
+loci were named with non-consecutive numbers.)
+
+Locus names are now allowed to be shorter versions of other locus names,
+e.g. "ABC1" and "ABC12".  Fixed: 'Genotypes' method of "genbinary" class
+(this affects 'simpleFreq' and 'genbinary.to.genambig'), 'deleteLoci' method
+of "genbinary" class, 'Loci<-' method of "genbinary" class, 'deSilvaFreq',
+'calcFst', 'write.freq.SPAGeDi', and 'freq.to.genpop'.
+
 Changes in version 1.2-0
 
 The internal functions .G, .indexg, .genlist, .ranmul, and .selfmat have been

@@ -4,7 +4,7 @@ require(combinat) # for permn
 
 if(is.na(usatnt)) stop("Bruvo.distance needs info from Usatnts slot.")
 
-if(identical(genotype1, genotype2)) {dist <- 0} else {
+if(identical(genotype1, genotype2)&&genotype1[1]!=missing) {dist <- 0} else {
     if((length(genotype1)>maxl & length(genotype2)>maxl)|
        genotype1[1]==missing|genotype2[1]==missing){
         dist <- NA} else {
@@ -493,3 +493,95 @@ assignClones <- function(d, samples=dimnames(d)[[1]], threshold=0){
     return(results)
 }
 
+# Function for the genotype loss/addition model of the Bruvo measure.
+# Figures out all the virtual alleles, then passes equal-length genotypes
+# to Bruvo.distance.
+# See Fig. 1b-1c and Eqn. 6 of Bruvo et al. 2004.
+Bruvo2.distance <- function(genotype1, genotype2, maxl=7, usatnt=2, missing=-9,
+                            add=TRUE, loss=TRUE){
+    if(length(genotype1)==length(genotype2) ||
+       genotype1[1] == missing ||
+       genotype2[1] == missing ||
+       (!add && !loss)){
+        # Let normal Bruvo.distance return NA for missing genotypes
+        # or pass directly to Bruvo.distance if there are no virtual alleles,
+        # or if user isn't using genome loss or genome addition model.
+        d <- Bruvo.distance(genotype1, genotype2, maxl=maxl, usatnt=usatnt,
+                            missing=missing)
+    } else {
+        if(length(genotype1) > maxl || length(genotype2) > maxl){
+            # if any has two many alleles, don't bother with enumeration
+            d <- NA
+        } else {
+            # Assign the long and short genotypes
+            if(length(genotype1) >= length(genotype2)) {
+                genotypeL <- genotype1
+                genotypeS <- genotype2
+            } else {
+                genotypeL <- genotype2
+                genotypeS <- genotype1
+            }
+            # get the difference in length
+            diff <- length(genotypeL) - length(genotypeS)
+            # get allele combinations to try
+            alcomb <- function(genotype){
+                lg <- length(genotype)
+                mat <- matrix(nrow=0, ncol=lg^diff)
+                for(i in 1:diff){
+                    mat <- rbind(mat, rep(genotype, times=lg^(i-1),
+                                          each=lg^(diff-i)))
+                }
+                return(mat)
+            }
+
+            if(add){
+                alleleadd <- alcomb(genotypeS)
+            }
+            if(loss){
+                alleleloss <- alcomb(genotypeL)
+            }
+            # set up vectors to hold results
+            distadd <- rep(NA, times=length(genotypeS)^diff)
+            distloss <- rep(NA, times=length(genotypeL)^diff)
+            # loop through calculations
+            if(add){
+            for(i in 1:length(distadd)){
+                if(length(unique(alleleadd[,i])) > 1){
+                    # check to see if this calculation has already been done
+                    for(j in 1:(i-1)){
+                        if(identical(sort(alleleadd[,i]),sort(alleleadd[,j]))){
+                            distadd[i] <- distadd[j]
+                            break
+                        }
+                    }
+                }
+                if(is.na(distadd[i])){
+                    # do the calculation is this allele combo is new
+                distadd[i] <- Bruvo.distance(genotypeL,
+                                             c(genotypeS, alleleadd[,i]),
+                                             maxl=maxl, usatnt=usatnt,
+                                             missing=missing)}
+            }}
+            if(loss){
+            for(i in 1:length(distloss)){
+                if(length(unique(alleleloss[,i])) > 1){
+                    for(j in 1:(i-1)){
+                        if(identical(sort(alleleloss[,i]),
+                                     sort(alleleloss[,j]))){
+                            distloss[i] <- distloss[j]
+                            break
+                        }
+                    }
+                }
+                if(is.na(distloss[i])){
+                distloss[i] <- Bruvo.distance(genotypeL,
+                                             c(genotypeS, alleleloss[,i]),
+                                             maxl=maxl, usatnt=usatnt,
+                                             missing=missing)}
+            }}
+            # get average
+            d <- mean(c(mean(distadd), mean(distloss)), na.rm=TRUE)
+        }
+    }
+    return(d)
+}

@@ -1,6 +1,6 @@
 Package: polysat
-Version: 1.2-0
-Date: 2010-04-30
+Version: 1.2-1
+Date: 2010-06-16
 Title: Tools for Polyploid Microsatellite Analysis
 Author: Lindsay V. Clark <lvclark@ucdavis.edu>
 Maintainer: Lindsay V. Clark <lvclark@ucdavis.edu>
@@ -16,13 +16,13 @@ Description: polysat is a collection of tools to handle microsatellite
         alleles model, with or without taking ploidies and allele
         frequencies into account.  These distances can be used for the
         calculation of clonal diversity statistics or used for further
-        analysis in R. polysat can also assist the user in estimating
+        analysis in R.  polysat can also assist the user in estimating
         the ploidy of samples, and lastly it can estimate allele
         frequencies in populations, calculate pairwise Fst values based
         on those frequencies, and export allele frequencies to SPAGeDi
         and adegenet.
 License: GPL (>= 2)
 URL: http://openwetware.org/wiki/Polysat
-Packaged: 2011-05-01 02:30:41 UTC; lvclark
+Packaged: 2012-01-15 10:18:06 UTC; ripley
 Repository: CRAN
-Date/Publication: 2011-05-01 07:00:48
+Date/Publication: 2012-01-15 10:27:33

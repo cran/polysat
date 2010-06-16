@@ -861,7 +861,8 @@ setMethod("Genotypes", "genbinary", function(object, samples, loci){
     # set up vector to index columns for these loci
     loccolumns <- integer(0)
     for(L in loci){
-        loccolumns <- c(loccolumns, grep(L, dimnames(object@Genotypes)[[2]],
+        loccolumns <- c(loccolumns, grep(paste(L,".",sep=""),
+                                         dimnames(object@Genotypes)[[2]],
                                          fixed = TRUE))
     }
 
@@ -941,8 +942,10 @@ setReplaceMethod("Loci", "genbinary", function(object, value){
     # get the original locus names and systematically replace them
     oldloci <- Loci(object)
     for(i in 1:length(oldloci)){
-        dimnames(object@Genotypes)[[2]] <- gsub(oldloci[i], value[i],
-                                                dimnames(object@Genotypes)[[2]])
+        dimnames(object@Genotypes)[[2]] <- gsub(paste(oldloci[i],".",sep=""),
+                                                paste(value[i],".",sep=""),
+                                                dimnames(object@Genotypes)[[2]],
+                                                fixed=TRUE)
     }
     # go to gendata method to change locus names in Usatnts
     callNextMethod(object, value)
@@ -1004,7 +1007,8 @@ setMethod("deleteSamples", "genbinary", function(object, samples){
 setMethod("deleteLoci", "genbinary", function(object, loci){
     loccolumns <- integer(0)
     for(L in loci){
-        loccolumns <- c(loccolumns, grep(L, dimnames(object@Genotypes)[[2]],
+        loccolumns <- c(loccolumns, grep(paste(L,".",sep=""),
+                                         dimnames(object@Genotypes)[[2]],
                                          fixed = TRUE))
     }
     object@Genotypes <- object@Genotypes[,-loccolumns]

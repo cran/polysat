@@ -4,9 +4,11 @@ read.GeneMapper<-function(infiles){
     loci<-c()
     locusdata<-list()
     length(locusdata)<-length(infiles)
+    cc <- c("character","character")
+    names(cc) <- c("Sample.Name","Marker")
     for(i in 1:length(infiles)){
         locusdata[[i]]<-read.table(infiles[i],sep="\t",header=TRUE,
-                                   as.is=c("Sample.Name","Marker"))
+                                   colClasses=cc)
         samples<-c(samples,locusdata[[i]][["Sample.Name"]])
         loci<-c(loci,locusdata[[i]][["Marker"]])
     }
@@ -45,6 +47,8 @@ read.GenoDive <- function(infile){
     lastloc<-length(colheader) # index of the last locus column
     firstloc<-lastloc-numloc+1 # index of the first locus column (3 or 4)
     loci<-colheader[firstloc:lastloc] # get the locus names
+    # get the column containing sample names
+    indcol <- firstloc - 1
 
     # set up genotype object
     object <- new("genambig", samples=1:numsam, loci = loci)
@@ -56,7 +60,7 @@ read.GenoDive <- function(infile){
         sampledata<-strsplit(rawdata[[3+numpop+s]],"\t")[[1]]
         # extract name and population
         PopInfo(object)[s]<-as.integer(sampledata[1])
-        Samples(object)[s]<-sampledata[2]
+        Samples(object)[s]<-sampledata[indcol]
         # extract alleles
         for(L in 1:numloc){
             rawalleles<-sampledata[(firstloc:lastloc)[L]]

@@ -382,7 +382,9 @@ simulation that generated this dataset, the latter measure works
 better here for distinguishing populations.
 
 If your data are autopolyploid, also see \texttt{?meandistance.matrix2}
-for another method of calculating inter-individual distances.
+for another method of calculating inter-individual distances.  If you
+have a mixed ploidy system in which the mechanism(s) for changes in
+ploidy are known, also see \texttt{?Bruvo2.distance}.
 
 \subsubsection{Working with subsets of the data}
 It is likely that you will want to perform some analyses on just a
@@ -945,9 +947,9 @@ A matrix of pairwise distances between individuals can be generated
 using the \texttt{meandistance.matrix} function, which was
 demonstrated in section \ref{sec:gsinddist}.  The most important
 argument is \texttt{distmetric}, or the distance measure that is
-used.  The two options that are provided with polysat are
-\texttt{Bruvo.distance}, which takes mutational distance between
-alleles into account
+used.  The three options that are provided with polysat are
+\texttt{Bruvo.distance} and \texttt{Bruvo2.distance}, which take
+mutational distance between alleles into account
 \cite{bruvo04}, and \texttt{Lynch.distance}, which is a simple
 band-sharing measure \cite{lynch90}.  (The user can create functions
 to serve as additional distance measures, as long as the arguments are
@@ -960,7 +962,11 @@ progress of the computation should be printed to the screen.  The
 matrix, a three-dimensional array of distances by locus should be
 returned.  There is also a \texttt{maxl} argument to indicate the
 threshold for \texttt{Bruvo.distance} to skip calculations that are
-too computationally intensive (see \texttt{?Bruvo.distance}).
+too computationally intensive (see \texttt{?Bruvo.distance}).  The
+function \texttt{Bruvo2.distance} has two additional arguments called
+\texttt{add} and \texttt{loss}, which when set to \texttt{TRUE}
+indicate that the models of genome addition and/or genome loss should
+be used, respectively.
 
 A second means of calculating inter-individual distances is provided
 with polysat 1.2 and is called \texttt{meandistance.matrix2}.  Whereas
@@ -973,7 +979,8 @@ genotypes are then passed to \texttt{distmetric}.  The distance is
 a weighted average across all possible combinations of unambiguous
 genotypes.  There is no advantage to using \texttt{Lynch.distance} with
 this function, but it may give improved results for
-\texttt{Bruvo.distance} or a user-defined distance measure.
+\texttt{Bruvo.distance}, \texttt{Bruvo2.distance}, or a user-defined
+distance measure.
 
 \begin{Schunk}
 \begin{Sinput}
@@ -1266,6 +1273,9 @@ sections \ref{sec:gsinddist} and \ref{sec:inddist}.  The
 \texttt{meandistance.matrix2} function is never appropriate under
 allopolyploid inheritance, since it assumes random segregation of
 alleles when calculating genotype probabilities.
+\texttt{Bruvo2.distance} is unlikely to be appropriate for an
+allopolyploid system, although I would encourage reading the
+paper\cite{bruvo04} and thinking about it for yourself.
 
 Assuming a distance matrix can be calculated using
 \texttt{meandistance.matrix}, all downstream analyses (principal

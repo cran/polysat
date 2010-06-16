@@ -87,7 +87,8 @@
   limit.  In this case, \code{Bruvo.distance} returns \code{NA}.
 }
 \seealso{
-  \code{\link{meandistance.matrix}}, \code{\link{Lynch.distance}}
+  \code{\link{meandistance.matrix}}, \code{\link{Lynch.distance}},
+  \code{\link{Bruvo2.distance}}
 }
 \examples{
   Bruvo.distance(c(202,206,210,220),c(204,206,216,222))

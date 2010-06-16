@@ -40,8 +40,8 @@ meandistance.matrix2(object, samples = Samples(object),
   \item{progress}{If \code{TRUE}, loci and samples will be printed to
     the console as distances are calculated, so that the user can
     monitor the progress of the computation.}
-  \item{...}{Additional arguments (such as \code{maxl}) to
-    pass to \code{distmetric}.}
+  \item{...}{Additional arguments (such as \code{maxl}, \code{add}, and
+    \code{loss}) to pass to \code{distmetric}.}
 }
 \value{
   A symmetrical matrix containing pairwise distances between all
@@ -73,12 +73,21 @@ meandistance.matrix2(object, samples = Samples(object),
   greater than zero when calculated with \code{meandistance.matrix2},
   due to potential differences in copy number of the alleles.
 
-  With the distance measures currently available in \pkg{polysat},
+  When \code{Bruvo.distance} is used,
   \code{meandistance.matrix2} exaggerates distances between individuals
-  of different ploidy as compared to \code{meandistance.matrix}.  When
-  comparing individuals of the same ploidy level, however,
-  \code{meandistance.matrix2} should be more accurate than
-  \code{meandistance.matrix}.
+  of different ploidy as compared to \code{meandistance.matrix}.  The
+  use of \code{Bruvo2.distance} with \code{meandistance.matrix2}
+  allows individuals with different ploidies to have similar
+  inter-individual distances to those between individuals of the same ploidy.
+  In general, it will be desirable to use \code{Bruvo.distance} with
+  \code{meandistance.matrix} for complex datasets with high ploidy
+  levels, or \code{Bruvo.distance2} with \code{meandistance.matrix2} for
+  hexaploid or lower datasets (based on how long it takes my personal
+  computer to perform these calculations) where changes in ploidy are
+  due to genome doubling or genome loss.  If all individuals have the
+  same ploidy, \code{Bruvo.distance} and \code{Bruvo2.distance} will
+  give identical results regardless of whether
+  \code{meandistance.matrix} or \code{meandistance.matrix2} is used.
 
   \code{meandistance.matrix2} does not allow a genotype to have more
   alleles than the ploidy of the individual (as listed in the
@@ -87,8 +96,8 @@ meandistance.matrix2(object, samples = Samples(object),
 \references{
 }
 \seealso{
-  \code{\link{Bruvo.distance}}, \code{\link{Lynch.distance}},
-  \code{\link{meandist.from.array}},
+  \code{\link{Bruvo.distance}}, \code{\link{Bruvo2.distance}},
+  \code{\link{Lynch.distance}}, \code{\link{meandist.from.array}},
   \code{\link{.genlist}}
 }
 \examples{

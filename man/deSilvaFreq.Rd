@@ -115,8 +115,9 @@ De Silva \emph{et al.} also suggest a means of
 estimating the selfing rate with a least-squares method.  Using the
 notation in the source code, this would be:
 
-\code{lsq <- smatt \%*\% EP - rvec
-self <- as.vector((t(EP - rvec) \%*\% lsq)/(t(lsq) \%*\% lsq))}
+\code{lsq <- smatt \%*\% EP - rvec}
+
+\code{self <- as.vector((t(EP - rvec) \%*\% lsq)/(t(lsq) \%*\% lsq))}
 
 However, in my experimentation with this calculation, it sometimes
 	       yields selfing rates greater than one.  For this reason,

@@ -405,7 +405,8 @@ deSilvaFreq <- function(object, self,
             psamples <- psamples[psamples %in% samples]
 
             # extract the initial allele frequencies and add a null
-            subInitFreq <- initFreq[pop, grep(L, names(initFreq), fixed=TRUE)]
+            subInitFreq <- initFreq[pop, grep(paste(L,".",sep=""),
+                                              names(initFreq), fixed=TRUE)]
 
             # set up matrices if this has not already been done
                 templist <- names(subInitFreq)[subInitFreq !=0]
@@ -562,7 +563,8 @@ calcFst<-function(freqs, pops=row.names(freqs),
             for(L in loci){
                 # get just the frequencies for these pops and this locus
                 thesefreqs<-freqs[c(pops[m],pops[n]),
-                                  grep(L,names(freqs),fixed=TRUE)]
+                                  grep(paste(L,".",sep=""),
+                                       names(freqs),fixed=TRUE)]
                 # get average allele frequencies weighted by genomes/pop
                 avgfreq<-(thesefreqs[1,]*genomes[pops[m]] +
                           thesefreqs[2,]*genomes[pops[n]])/
@@ -601,7 +603,7 @@ write.freq.SPAGeDi <- function(freqs, usatnts, file="", digits=2,
 
     for(L in loci){
         # find the alleles
-        alleles <- as.matrix(as.data.frame(strsplit(names(freqs)[grep(L,
+        alleles <- as.matrix(as.data.frame(strsplit(names(freqs)[grep(paste(L,".",sep=""),
                                                             names(freqs),
                                                             fixed=TRUE)],
                                           split=".", fixed=TRUE))[2,])
@@ -622,7 +624,8 @@ write.freq.SPAGeDi <- function(freqs, usatnts, file="", digits=2,
         item <- item + 1
         # make a weighted average of allele frequencies across populations
         avgfreq <- (freqs$Genomes %*%
-                    as.matrix(freqs[,grep(L, names(freqs),fixed=TRUE)]))/
+                    as.matrix(freqs[,grep(paste(L,".",sep=""),
+                                          names(freqs),fixed=TRUE)]))/
                         sum(freqs$Genomes)
         # add frequencies to list
         datalist[[item]] <- as.vector(avgfreq)
@@ -657,7 +660,7 @@ freq.to.genpop <- function(freqs, pops=row.names(freqs),
     # get an index of columns containing these loci
     loccol <- integer(0)
     for(L in loci){
-        loccol <- c(loccol, grep(L, names(freqs), fixed=TRUE))
+        loccol <- c(loccol, grep(paste(L,".",sep=""), names(freqs), fixed=TRUE))
     }
     # get a table just for these populations and loci
     subfreq <- freqs[pops, loccol]
@@ -689,7 +692,7 @@ Simpson <- function(p){
 genotypeDiversity <- function(genobject,
                    samples = Samples(genobject), loci = Loci(genobject),
                     d = meandistance.matrix(genobject,samples,loci,
-                    all.distances=TRUE),
+                    all.distances=TRUE,distmetric=Lynch.distance),
                     threshold = 0, index = Shannon,
                               ...){
     # get populations

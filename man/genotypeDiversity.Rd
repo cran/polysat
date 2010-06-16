@@ -16,7 +16,8 @@ of frequencies.
 genotypeDiversity(genobject, samples = Samples(genobject),
                   loci = Loci(genobject),
                   d = meandistance.matrix(genobject, samples, loci,
-                                          all.distances = TRUE),
+                                          all.distances = TRUE,
+                                          distmetric = Lynch.distance),
                   threshold = 0, index = Shannon, ...)
 
 Shannon(p, base = exp(1))
