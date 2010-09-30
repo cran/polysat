@@ -9,7 +9,7 @@ dissimilarity is calculated as:
 1 - (number of alleles in common)/(average number of alleles per genotype).
 }
 \usage{
-Lynch.distance(genotype1, genotype2, missing = -9)
+Lynch.distance(genotype1, genotype2, usatnt = NA, missing = -9)
 }
 \arguments{
   \item{genotype1}{
@@ -19,6 +19,9 @@ Each allele is only present once in the vector.
   \item{genotype2}{
 A vector of the same form as \code{genotype1}, for another sample at the
 same locus.
+}
+\item{usatnt}{
+The microsatellite repeat length for this locus (ignored by the function).
 }
   \item{missing}{
 The symbol used to indicate missing data in either genotype vector.
@@ -41,7 +44,7 @@ the two genotypes have in common divided by the mean length of the two
 genotypes.
 }
 \references{
-Lynch, M.  (1990)  The Similarity Index and DNA Fingerprinting.
+Lynch, M.  (1990)  The similarity index and DNA fingerprinting.
 \emph{Molecular Biology and Evolution} \bold{7}, 478-484.
 }
 \author{
@@ -54,7 +57,7 @@ Lindsay V. Clark
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-  \code{\link{Bruvo.distance}}, \code{\link{distance.matrix.1locus}},
+  \code{\link{Bruvo.distance}},
   \code{\link{meandistance.matrix}}
 }
 \examples{

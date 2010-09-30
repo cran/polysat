@@ -1,0 +1,32 @@
+Changes in version 1.0
+
+The S4 classes "gendata", "genambig", and "genbinary" and their accompanying
+methods have been added.  This allows genotypes, population identities,
+population names, ploidies, microsatellite repeat lengths, and a description
+to all be stored in one object, while in version 0.1 they had to be stored in
+separate objects.  Because of this, many of the functions require fewer
+arguments, and user error should be reduced.
+
+The functions 'viewGenotypes' and 'editGenotypes' have been added so that
+genotypes can be more neatly printed to the console, and can be edited with
+the Data Editor as an alternative to command-line genotype editing.
+
+The 'isMissing' function is added to simplify the identification of missing
+genotypes.
+
+The function 'estimatePloidy' now directly opens the Data Editor and then
+returns the ploidies to the appropriate slot in the "gendata" object.
+Previously, the function produced an array from which ploidies had to be
+manually extracted.
+
+The function 'distance.matrix.1locus' no longer exists since it has been
+consolidated into the 'meandistance.matrix' function.  'Lynch.distance' has a
+'usatnt' argument added to it for the sake of simplifying the code for
+'meandistance.matrix'; this argument is ignored by 'Lynch.distance'.
+
+The new function 'deSilvaFreq' performs an iterative computation to estimate
+allele freqencies in populations with uniform, even-numbered ploidy and a
+known selfing rate.  The old function 'estimate.freq' is renamed 'simpleFreq'.
+
+A function 'write.freq.SPAGeDi' is added to export allele frequencies to 
+SPAGeDi.

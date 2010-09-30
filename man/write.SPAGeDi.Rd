@@ -4,44 +4,32 @@
 Write Genotypes in SPAGeDi Format
 }
 \description{
-\code{write.SPAGeDi} takes a genotype object in the standard polysat
-format and creates a file that can be read by the software SPAGeDi.  The
-user controls how the genotypes are formatted, and can specify the
-ploidy, population, and spatial coordinates of each sample.
+  \code{write.SPAGeDi} uses data contained in a \code{genambig} object
+  to create a file that can be read by the software SPAGeDi.  The
+user controls how the genotypes are formatted, and can provide a data
+frame of spatial coordinates for each sample.
 }
 \usage{
-write.SPAGeDi(gendata, samples = dimnames(gendata)[[1]],
-              loci = dimnames(gendata)[[2]],
-              indploidies = rep(4, length(samples)),
-              popinfo = rep(1, length(samples)), allelesep = "/",
+write.SPAGeDi(object, samples = Samples(object),
+              loci = Loci(object), allelesep = "/",
               digits = 2, file = "",
               spatcoord = data.frame(X = rep(1, length(samples)),
                                      Y = rep(1, length(samples)),
-                                     row.names = samples),
-              usatnts = rep(2, length(loci)), missing = -9)
+                                     row.names = samples))
 }
 \arguments{
-  \item{gendata}{
-A genotype object in the standard polysat format.  A two dimensional
-list of integer vectors, where samples are represented and named in the first
-dimension, and loci are represented and named in the second dimension.
-Each vector contains all unique allele for a given sample and locus.
+  \item{object}{
+A \code{genambig} object containing genotypes, ploidies, population
+identities, and microsatellite repeat lengths for the dataset of
+interest.
 }
   \item{samples}{
 Character vector.  Samples to write to the file.  Must be a subset of
-dimnames(gendata)[[1]].
+\code{Samples(object)}.
 }
   \item{loci}{
 Character vector.  Loci to write to the file.  Must be a subset of
-dimnames(gendata)[[2]].
-}
-  \item{indploidies}{
-Integer vector.  Ploidy of each sample.  This can either be named by
-sample, or be in the same order as \code{samples}.
-}
-  \item{popinfo}{
-Vector.  Population identity (or category) of each individual.  This can
-either be named by sample, or be in the same order as \code{samples}.
+\code{Loci(object)}.
 }
   \item{allelesep}{
 The character that will be used to separate alleles within a genotype.
@@ -52,28 +40,20 @@ characters to delimit alleles, set \code{allelesep = ""}.
 Integer.  The number of digits used to represent each allele.
 }
   \item{file}{
-Character string.  The file path to write to.
+A character string indicating the path to which the file should be
+written.
 }
   \item{spatcoord}{
 Data frame.  Spatial coordinates of each sample.  Column names are used
 for column names in the file.  Row names indicate sample, or if absent
 it is assumed that the rows are in the same order as \code{samples}.
 }
-  \item{usatnts}{
-Integer vector.  Repeat length of each locus (eg. 2 to indicate
-dinucleotide repeats, or 3 to indicate trinucleotide repeats).  If the
-alleles in \code{gendata} are already in repeat lengths rather than
-nucleotides, the value should be 1.  The vector should be named by loci,
-or else is assumed to be in the same order as \code{loci}.
-}
-  \item{missing}{
-The symbol used in \code{gendata} to indicate missing data.
-}
 }
 \details{
-\code{popinfo}, \code{indploidies}, \code{spatcoord}, and \code{usatnts}
-can have more samples or loci than are to be written to the file, as
-long as they are named.
+The Categories column of the SPAGeDi file that is produced contains
+information from the \code{PopNames} and \code{PopInfo} slots of
+\code{object}; the population name for each sample is written to the
+column.
 
 The first line of the file contains the number of individuals, number of
 categories, number of spatial coordinates, number of loci, number of
@@ -83,13 +63,13 @@ automatically from the data provided.
 The function does not write distance intervals to the file, but instead
 writes \code{0} to the second line.
 
-All alleles for a given locus are divided by the \code{usatnts} value
+All alleles for a given locus are divided by the \code{Usatnts} value
 for that locus, after all missing data symbols have been replaced with
 zeros.  If necessary, a multiple of 10 is subtracted from all
 alleles at a locus in order to get the alleles down to the right number
 of digits.
 
-If a genotype has fewer alleles than the \code{indploidies} value for
+If a genotype has fewer alleles than the \code{Ploidies} value for
 that sample, zeros are added up to the ploidy.  If the genotype has more
 alleles than the ploidy, a random subset of alleles is used and a
 warning is printed.  If the genotype has only one allele (is fully
@@ -119,30 +99,29 @@ Lindsay V. Clark
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link{read.SPAGeDi}}, \code{\link{write.GenoDive}},
+  \code{\link{read.SPAGeDi}}, \code{\link{write.freq.SPAGeDi}},
+  \code{\link{write.GenoDive}},
 \code{\link{write.Structure}}, \code{\link{write.GeneMapper}},
-\code{\link{write.ATetra}}, \code{\link{write.Tetrasat}},
-\code{\link{codominant.to.dominant}}
+\code{\link{write.ATetra}}, \code{\link{write.Tetrasat}}
 }
 \examples{
 # set up data to write (usually read from a file)
-mygendata <- array(list(-9), dim=c(4,2),
-                   dimnames=list(c("ind1","ind2","ind3","ind4"),
-                                 c("loc1", "loc2")))
-mygendata["ind1",] <- list(c(102,106,108),c(207,210))
-mygendata["ind2",] <- list(c(104),c(204,210))
-mygendata["ind3",] <- list(c(100,102,108),c(201,213))
-mygendata["ind4",] <- list(c(102,112),c(-9))
-myploidies <- c(3,2,2,2)
-names(myploidies) <- c("ind1","ind2","ind3","ind4")
-myusatnts <- c(2,3)
-names(myusatnts) <- c("loc1","loc2")
+mygendata <- new("genambig", samples = c("ind1","ind2","ind3","ind4"),
+                 loci = c("loc1", "loc2"))
+Genotypes(mygendata, samples="ind1") <- list(c(102,106,108),c(207,210))
+Genotypes(mygendata, samples="ind2") <- list(c(104),c(204,210))
+Genotypes(mygendata, samples="ind3") <- list(c(100,102,108),c(201,213))
+Genotypes(mygendata, samples="ind4") <- list(c(102,112),c(-9))
+Ploidies(mygendata) <- c(3,2,2,2)
+Usatnts(mygendata) <- c(2,3)
+PopNames(mygendata) <- c("A", "B")
+PopInfo(mygendata) <- c(1,1,2,2)
 myspatcoord <- data.frame(X=c(27,29,24,30), Y=c(44,41,45,46),
                           row.names=c("ind1","ind2","ind3","ind4"))
 
 # write a file
-write.SPAGeDi(mygendata, indploidies = myploidies, usatnts = myusatnts,
-              spatcoord = myspatcoord, file="SpagOutExample.txt")
+write.SPAGeDi(mygendata, spatcoord = myspatcoord,
+              file="SpagOutExample.txt")
 }
 \keyword{ file }
 

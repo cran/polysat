@@ -1,8 +1,18 @@
-export(Bruvo.distance, distance.matrix.1locus, estimate.ploidy,
+export(Bruvo.distance,
        meandistance.matrix, read.GeneMapper, write.Structure,
-       read.ATetra, read.Tetrasat, codominant.to.dominant,
-       dominant.to.codominant, read.GenoDive, write.GenoDive,
+       read.ATetra, read.Tetrasat, genambig.to.genbinary,
+       genbinary.to.genambig, read.GenoDive, write.GenoDive,
        write.ATetra, write.Tetrasat, read.Structure,
-       write.GeneMapper, calcFst, estimate.freq, find.missing.gen,
+       write.GeneMapper, calcFst, simpleFreq, deSilvaFreq,
+       find.missing.gen,
        meandist.from.array, find.na.dist, find.na.dist.not.missing,
-       Lynch.distance, write.SPAGeDi, read.SPAGeDi)
+       Lynch.distance, write.SPAGeDi, read.SPAGeDi, write.freq.SPAGeDi)
+exportMethods(estimatePloidy, Samples, "Samples<-", Loci, "Loci<-", PopInfo,
+              "PopInfo<-", PopNames, "PopNames<-", Ploidies, "Ploidies<-",
+              Usatnts,
+              "Usatnts<-", deleteSamples, deleteLoci, Missing, "Missing<-",
+              Description, "Description<-", PopNum, "PopNum<-", Genotype,
+              "Genotype<-", Genotypes, "Genotypes<-", isMissing, viewGenotypes,
+              editGenotypes, Present, "Present<-", Absent, "Absent<-", summary,
+              merge)
+exportClasses(gendata, genambig, genbinary)

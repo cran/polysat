@@ -15,7 +15,8 @@ stringsAsFactors = FALSE))[1, ]))
 \arguments{
   \item{freqs}{
 A data frame of allele frequencies and population sizes such as that
-produced by \code{estimate.freq}.  Each population is in one row, and a
+produced by \code{simpleFreq} or \code{deSilvaFreq}.  Each population 
+is in one row, and a
 column called \code{Genomes} contains the relative size of each
 population.  All other columns contain allele frequencies.  The names of
 these columns are the locus name and allele name, separated by a period.
@@ -47,7 +48,7 @@ A square matrix containing FST values.  The rows and columns of the
 matrix are both named by population.
 }
 \references{
-Nei, M. (1973) Analysis of Gene Diversity in Subdivided Populations.
+Nei, M. (1973) Analysis of gene diversity in subdivided populations.
 \emph{Proceedings of the National Academy of Sciences of the United
   States of America} \bold{70}, 3321--3323.
 }
@@ -61,26 +62,23 @@ Lindsay V. Clark
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link{estimate.freq}}
+\code{\link{simpleFreq}}, \code{\link{deSilvaFreq}}
 }
 \examples{
 # create a data set (typically done by reading files)
-mygenotypes <- array(list(-9), dim = c(6,2), dimnames =
-list(paste("ind",1:6, sep=""),c("loc1","loc2")))
-mygenotypes[,"loc1"] <- list(c(206), c(208,210), c(204,206,210),
-c(196,198,202,208), c(196,200), c(198,200,202,204))
-mygenotypes[,"loc2"] <- list(c(130,134), c(138,140), c(130,136,140),
-c(138), c(136,140), c(130,132,136))
-
-mypopinfo <- c(1,1,1,2,2,2)
-names(mypopinfo) <- dimnames(mygenotypes)[[1]]
-
-myploidies <- c(2,2,4,4,2,4)
-names(myploidies) <- dimnames(mygenotypes)[[1]]
+mygenotypes <- new("genambig", samples = paste("ind", 1:6, sep=""),
+                   loci = c("loc1", "loc2"))
+Genotypes(mygenotypes, loci = "loc1") <- list(c(206), c(208,210),
+                                              c(204,206,210),
+    c(196,198,202,208), c(196,200), c(198,200,202,204))
+Genotypes(mygenotypes, loci = "loc2") <- list(c(130,134), c(138,140),
+                                              c(130,136,140),
+    c(138), c(136,140), c(130,132,136))
+PopInfo(mygenotypes) <- c(1,1,1,2,2,2)
+Ploidies(mygenotypes) <- c(2,2,4,4,2,4)
 
 # calculate allele frequencies
-myfreq <- estimate.freq(mygenotypes, popinfo = mypopinfo,
-indploidies = myploidies)
+myfreq <- simpleFreq(mygenotypes)
 
 # calculate pairwise FST
 myfst <- calcFst(myfreq)

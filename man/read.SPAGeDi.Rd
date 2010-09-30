@@ -1,21 +1,21 @@
 \name{read.SPAGeDi}
 \alias{read.SPAGeDi}
 \title{
-Read Genotypes in SPAGeDi format
+Read Genotypes in SPAGeDi Format
 }
 \description{
 \code{read.SPAGeDi} can read a text file formatted for the SPAGeDi
-software and return a genotype object in the standard polysat format,
-as well as optionally returning a vector of individual ploidies and/or a
-data frame of categories and spatial coordinates.
+software and return a \code{genambig} object,
+as well as optionally returning a data frame of spatial coordinates.
+The \code{genambig} object includes genotypes, ploidies, and population
+identities (from the category column, if present) from the file.
 }
 \usage{
-read.SPAGeDi(infile, allelesep = "/", returncatspatcoord = FALSE,
-             returnploidies = FALSE, missing = -9)
+read.SPAGeDi(infile, allelesep = "/", returnspatcoord = FALSE)
 }
 \arguments{
   \item{infile}{
-Character string.  Path of the file to read.
+A character string indicating the path of the file to read.
 }
   \item{allelesep}{
 The character that is used to delimit alleles within genotypes, or
@@ -24,17 +24,9 @@ by any character.  Other examples shown in section 3.2.1 of the SPAGeDi
 1.3 manual include \code{"/"}, \code{" "}, \code{", "}, \code{"."}, and
 \code{"--"}.
 }
-  \item{returncatspatcoord}{
+  \item{returnspatcoord}{
 Boolean.  Indicates whether a data frame should be returned containing
-the category and spatial coordinates columns.
-}
-  \item{returnploidies}{
-Boolean.  Indicates whether a vector should be returned containing the
-ploidy of each individual.
-}
-  \item{missing}{
-The symbol to be used to specify missing data in the genotype object
-that is returned.
+the spatial coordinates columns.
 }
 }
 \details{
@@ -47,7 +39,7 @@ with \code{//}, as well as blank lines, are ignored by
 
 \code{read.SPAGeDi} is not designed to read dominant data (see section
 3.2.2 of the SPAGeDi 1.3 manual).  However, see
-\code{dominant.to.codominant} for a way to read this type
+\code{genbinary.to.genambig} for a way to read this type
 of data after some simple manipulation in a spreadsheet program.
 
 The first line of a SPAGeDi file contains information that is used by
@@ -69,24 +61,19 @@ are added to the left of the genotype string before splitting it into
 alleles.
 }
 \value{
-Under the default where \code{returncatspatcoord=FALSE} and
-\code{returnploidies=FALSE}, a genotype object in the standard polysat
-format is returned.  This is a two-dimensional list of integer vectors,
-where the first dimension of the list represents samples and the second
-dimension of the list represents loci.  Both dimensions are named by the
-individual and locus names found in the file.  Each vector contains all
-unique alleles, formatted as integers.  
+  Under the default where \code{returnspatcoord=FALSE}, a \code{genambig}
+  object is returned.  Alleles are formatted as integers.  The
+  \code{Ploidies} slot is filled in according to the number of alleles
+  per genotype, ignoring zeros on the left.  If the first line of the
+  file indicates that there are more than zero categories, the category
+  column is used to fill in the \code{PopNames} and \code{PopInfo} slots.
 
-Otherwise, a list of two or three objects is returned:
-\item{CatSpatCoord }{A data frame of categories and spatial coordinates,
+Otherwise, a list is returned:
+\item{SpatCoord }{A data frame of spatial coordinates,
 unchanged from the file.  The format of each column is determined under
 the default \code{read.table} settings.  Row names are individual names
 from the file.  Column names are the same as in the file.}
-\item{Indploidies }{A vector containing the ploidy of each individual,
-  as determined by the (maximum) number of alleles per genotype,
-  including zeros on the right.  The vector is named by the individual
-  names from the file.}
-\item{Genotypes }{A genotype object as described above.}
+\item{Dataset }{A \code{genambig} object as described above.}
 }
 \references{
   \url{http://ebe.ulb.ac.be/ebe/Software_files/manual_SPAGeDi_1-3.pdf}
@@ -100,7 +87,7 @@ Lindsay V. Clark
 }
 
 \seealso{
-\code{\link{write.SPAGeDi}}, \code{\link{dominant.to.codominant}},
+\code{\link{write.SPAGeDi}}, \code{\link{genbinary.to.genambig}},
 \code{\link{read.table}}, \code{\link{read.GeneMapper}},
 \code{\link{read.GenoDive}}, \code{\link{read.Structure}},
 \code{\link{read.ATetra}}, \code{\link{read.Tetrasat}}
@@ -125,14 +112,12 @@ cat(readLines("SpagInputExample.txt"), sep="\n")
 
 # read the file
 mydata <- read.SPAGeDi("SpagInputExample.txt", allelesep = "",
-returncatspatcoord = TRUE, returnploidies = TRUE)
+returnspatcoord = TRUE)
 
 # view the data
 mydata
+viewGenotypes(mydata[[2]])
 
-# view genotypes by locus
-mydata$Genotypes[,"loc1"]
-mydata$Genotypes[,"loc2"]
 }
 \keyword{ file }
 

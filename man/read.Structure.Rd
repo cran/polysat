@@ -4,26 +4,27 @@
 Read Genotypes and Other Data from a Structure File
 }
 \description{
-\code{read.Structure} creates a genotype object of the standard polysat
-format by reading a text file formatted for the software Structure.
-Optionally, it can also extract PopData and any other extra columns from
-the file.
+\code{read.Structure} creates a \code{genambig} object by reading a text
+file formatted for the software Structure.  \code{Ploidies} and
+\code{PopInfo} (if
+available) are also written to the object, and data from additional
+columns can optionally be extracted as well.
 }
 \usage{
-read.Structure(infile, missingin = -9, missingout = -9, sep = "\t",
-markernames = TRUE, labels = TRUE, extrarows = 1, extracols = 0,
-ploidy = 4, getexcols = FALSE)
+read.Structure(infile, ploidy, missingin = -9, sep = "\t",
+               markernames = TRUE, labels = TRUE, extrarows = 1,
+               popinfocol = 1, extracols = 1, getexcols = FALSE)
 }
 \arguments{
   \item{infile}{
 Character string.  The file path to be read.
 }
+\item{ploidy}{
+    Integer.  The ploidy of the file, \emph{i.e.} how many rows there
+    are for each individual.
+}
   \item{missingin}{
 The symbol used to represent missing data in the Structure file.
-}
-  \item{missingout}{
-The symbol to be used to represent missing data in the genotype object
-that is produced.
 }
   \item{sep}{
 The character used to delimit the fields of the Structure file (tab by default).
@@ -39,15 +40,19 @@ Integer.  The number of extra rows that the file has, not counting
 marker names.  This could include rows for recessive alleles,
 inter-marker distances, or phase information.
 }
+\item{popinfocol}{
+  Integer.  The column number (after the labels column, if present)
+  where the data to be used for \code{PopInfo} are stored.  Can be
+  \code{NA} to indicate that \code{PopInfo} should not be extracted from
+  the file.
+  }
   \item{extracols}{
 Integer.  The number of extra columns that the file has, not counting
-sample names (labels).  This could include PopData, PopFlag, LocData,
+sample names (labels) but counting the column to be used for
+\code{PopInfo}.  This could include PopData, PopFlag, LocData,
 Phenotype, or any other extra columns.
 }
-  \item{ploidy}{
-    Integer.  The ploidy of the file, i.e. how many rows there are for each
-    individual.
-}
+
   \item{getexcols}{
 Boolean, indicating whether the function should return the data from any
 extra columns.
@@ -56,7 +61,7 @@ extra columns.
 \details{
 The current version of \code{read.Structure} does not support the
 ONEROWPERIND option in the file format.  Each locus must only have one
-column.  If your data is in ONEROWPERIND format, it should be fairly
+column.  If your data are in ONEROWPERIND format, it should be fairly
 simple to manipulate it in a spreadsheet program so that it can be read
 by \code{read.GeneMapper} instead.
 
@@ -69,24 +74,20 @@ able to open the file in a spreadsheet program and have everything align
 correctly.
 
 If the file does not contain sample names, set \code{labels=FALSE}.  The
-samples will be numbered instead, and if you like you can edit the
-\code{dimnames} of the genotype object after the fact if you have the
-sample names stored separately.  Likewise, if \code{markernames=FALSE}, the
+samples will be numbered instead, and if you like you can use the
+\code{Samples<-} function to edit the sample names of the genotype object after 
+import.  Likewise, if \code{markernames=FALSE}, the
 loci will be numbered automatically by the column names that
 \code{read.table} creates, but these can also be edited after the fact.
 }
 \value{
-If \code{getexcols=FALSE}, the function returns only a genotype object in the
-standard polysat format.  This is a two-dimensional list, where samples
-are represented in the first dimension and loci in the second
-dimension.  Each element of the list is an integer vector containing all
-unique alleles for a given locus and sample.
+If \code{getexcols=FALSE}, the function returns only a \code{genambig} object.
 
 If \code{getexcols=TRUE}, the function returns a list with two elements.  The
-first, named ExtraCol, is a data frame, where the row names are the
+first, named \code{ExtraCol}, is a data frame, where the row names are the
 sample names and each column is one of the extra columns from the file
 (but with each sample only once instead of being repeated \code{ploidy}
-number of times).  The second element is named Genotypes and is the
+number of times).  The second element is named \code{Dataset} and is the
 genotype object described above.
 }
 \references{
@@ -114,7 +115,7 @@ Lindsay V. Clark
 \seealso{
 \code{\link{write.Structure}}, \code{\link{read.GeneMapper}},
 \code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
-\code{\link{read.GenoDive}}, \code{\link{dominant.to.codominant}},
+\code{\link{read.GenoDive}},
 \code{\link{read.SPAGeDi}}
 }
 \examples{
@@ -160,12 +161,9 @@ cat("\t\tRhCBA15\tRhCBA23\tRhCBA28\tRhCBA14\tRUB126\tRUB262\tRhCBA6\tRUB26",
 cat(readLines("structtest.txt"), sep="\n")
 
 # read the structure file into genotypes and populations
-testdata <- read.Structure("structtest.txt", extracols=1,
-                           ploidy=8, getexcols=TRUE)
+testdata <- read.Structure("structtest.txt", ploidy=8)
 
 # examine the results
-testdata$ExtraCol
-testdata$Genotypes
-testdata$Genotypes["WIN1B",]
+testdata
 }
 \keyword{ file }

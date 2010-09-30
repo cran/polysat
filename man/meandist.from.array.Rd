@@ -20,7 +20,7 @@ loci = dimnames(distarray)[[1]])
 find.na.dist(distarray, samples = dimnames(distarray)[[2]],
 loci = dimnames(distarray)[[1]])
 
-find.na.dist.not.missing(gendata, distarray, missing = -9,
+find.na.dist.not.missing(object, distarray,
 samples = dimnames(distarray)[[2]], loci = dimnames(distarray)[[1]])
 }
 \arguments{
@@ -37,13 +37,10 @@ Character vector.  Samples to analyze.
   \item{loci}{
 Character vector.  Loci to analyze.
 }
-\item{gendata}{
-  A genotype object in the standard polysat format.  Typically the
+\item{object}{
+  A \code{genambig} object.  Typically the
   genotype object that was used to produce \code{distarray}.
 }
-\item{missing}{
-  The symbol used to represent missing data in \code{gendata}.
-  }
 }
 \details{
 \code{find.na.dist.not.missing} is primarily intended to locate distances
@@ -73,7 +70,8 @@ Lindsay V. Clark
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link{meandistance.matrix}}, \code{\link{Bruvo.distance}}
+\code{\link{meandistance.matrix}}, \code{\link{Bruvo.distance}},
+\code{\link{find.missing.gen}}
 }
 \examples{
 # set up the genotype data
@@ -81,12 +79,15 @@ samples <- paste("ind", 1:4, sep="")
 samples
 loci <- paste("loc", 1:3, sep="")
 loci
-testgen <- array(list(-9), dim = c(4,3), dimnames = list(samples,loci))
-testgen[,"loc1"] <- list(c(-9), c(102,104), c(100,106,108,110,114),
-                         c(102,104,106,110,112))
-testgen[,"loc2"] <- list(c(77,79,83), c(79,85), c(-9), c(83,85,87,91))
-testgen[,"loc3"] <- list(c(122,128), c(124,126,128,132), c(120,126),
-                         c(124,128,130))
+testgen <- new("genambig", samples=samples, loci=loci)
+Genotypes(testgen, loci="loc1") <- list(c(-9), c(102,104),
+                                        c(100,106,108,110,114),
+                                        c(102,104,106,110,112))
+Genotypes(testgen, loci="loc2") <- list(c(77,79,83), c(79,85), c(-9),
+                                        c(83,85,87,91))
+Genotypes(testgen, loci="loc3") <- list(c(122,128), c(124,126,128,132),
+                                        c(120,126), c(124,128,130))
+Usatnts(testgen) <- c(2,2,2)
 
 # look up which samples*loci have missing genotypes
 find.missing.gen(testgen)

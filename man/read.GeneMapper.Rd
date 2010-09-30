@@ -1,35 +1,27 @@
 \name{read.GeneMapper}
 \alias{read.GeneMapper}
-\title{Read GeneMapper Genotypes Tables}
+\title{
+Read GeneMapper Genotypes Tables
+}
 \description{
   Given a vector of filepaths to tab-delimited text files containing
   genotype data in the ABI GeneMapper Genotypes Table format,
-  \code{read.GeneMapper} produces a two-dimensional list of genotypes that can
-  be read by other functions in the polysat package.
+  \code{read.GeneMapper} produces a \code{genambig} object containing
+  the genotype data.
 }
 \usage{
-  read.GeneMapper(infiles, missing = -9)
+read.GeneMapper(infiles)
 }
 \arguments{
-  \item{infiles}{A character vector of paths to the files to be read.}
-  \item{missing}{A numerical value used to indicate missing data for a
-    given sample and locus.}
+  \item{infiles}{
+A character vector of paths to the files to be read.
 }
-\value{
-  The object produced is a two-dimensional list of vectors representing
-  the genotypes.  Samples are represented by the first dimension and
-  loci by the second dimension.  The names of the samples and loci are
-  taken from the Sample Names and Markers columns, respectively, of the
-  GeneMapper files.  The vectors at each position of the list are
-  numerical and are only as long as needed to contain each allele (for
-  that sample and locus) as one element.
 }
 \details{
-  \code{read.GeneMapper} can read the genotypes tables that are exported
+\code{read.GeneMapper} can read the genotypes tables that are exported
   by the Applied Biosystems GeneMapper software.  The only alterations
   to the files that the user may have to make are 1) delete
-  any rows with missing data or fill in a numerical missing
-  data symbol of your choice (such as -9) in the first allele slot for
+  any rows with missing data or fill in \code{-9} in the first allele slot for
   that row, 2) make sure that all allele names are numeric
   representations of fragment length (no question marks or dashes), and
   3) put sample names into the Sample Name column, if the names that you
@@ -65,44 +57,33 @@
   missing data symbol into the first allele cell.
 
   Sample and locus names must be consistent within and across the
-  files.  The list that is produced is indexed by these names.  For
-  example, if the object produced was called \code{mygenotypes},
-  \code{mygenotypes[["AB1","ABC5"]]} would be a vector containing alleles for
-  sample AB1 at locus ABC5.  \code{mygenotypes[,"ABC5"]} would be a list of all
-  genotypes at locus ABC5, and \code{mygenotypes["AB1",]} would be a list of
-  all genotypes for sample AB1.
+  files.  The object that is produced is indexed by these names.
+}
+\value{
+A \code{genambig} object containing genotypes from the files, stored as
+vectors of unique alleles in its \code{Genotypes} slot.  Other slots are
+left at the default values.
 }
 \references{
-  \url{http://www.appliedbiosystems.com/genemapper}
+\url{http://www.appliedbiosystems.com/genemapper}
+}
+\author{
+Lindsay V. Clark
 }
 \note{
   A \sQuote{subscript out of bounds} error may mean that a sample name
   or marker was left blank in one of the input files.
-  }
+}
+
+%% ~Make other sections like Warning with \section{Warning }{....} ~
+
 \seealso{
-  \code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
-  \code{\link{read.Structure}}, \code{\link{read.GenoDive}},
-  \code{\link{write.GeneMapper}}, \code{\link{dominant.to.codominant}},
-  \code{\link{read.SPAGeDi}}
+\code{\linkS4class{genambig}}, \code{\link{read.Structure}},
+\code{\link{read.GenoDive}}, \code{\link{read.SPAGeDi}},
+\code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
+\code{\link{write.GeneMapper}}
 }
 \examples{
-  \dontrun{
-    myinfiles<-c("data\\sample CBA15.txt","data\\sample
-    CBA23.txt","data\\sample CBA28.txt")
-    mygenotypes<-read.GeneMapper(myinfiles)
-
-    #Look at the object produced.  Alleles are not listed but you can
-    #see that the array was filled.
-    mygenotypes
-
-    #Look at the genotype of individual FCR5.
-    mygenotypes["FCR5",]
-
-    #Correct one of the genotypes
-    mygenotypes[["FCR5","RhCBA15"]]<-c(208)
-  }
-
-# an example with defined data:
 # create a table of data
 gentable <- data.frame(Sample.Name=rep(c("ind1","ind2","ind3"),2),
                        Marker=rep(c("loc1","loc2"), each=3),
@@ -120,8 +101,7 @@ write.table(gentable, file="readGMtest.txt", quote=FALSE, sep="\t",
 mygenotypes <- read.GeneMapper("readGMtest.txt")
 
 # inspect the results
-mygenotypes[,"loc1"]
-mygenotypes[,"loc2"]
+viewGenotypes(mygenotypes)
 }
-\author{Lindsay V. Clark}
-\keyword{file}
+\keyword{ file }
+

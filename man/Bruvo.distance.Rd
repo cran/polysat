@@ -1,9 +1,10 @@
 \name{Bruvo.distance}
 \alias{Bruvo.distance}
-\title{Genetic Distance Metric of Bruvo et al}
+\title{Genetic Distance Metric of Bruvo et al.}
 \description{
   This function calculates the distance between two individuals at one
-  microsatellite locus using the method of Bruvo et al. (2004).
+  microsatellite locus using a method based on that of Bruvo
+  \emph{et al.} (2004).
 }
 \usage{Bruvo.distance(genotype1, genotype2, maxl=9, usatnt=2, missing=-9)}
 \arguments{
@@ -28,7 +29,7 @@
 }
 \details{
   Since allele copy number is frequently unknown in polyploid
-  microsatellite data, Bruvo et al. developed a measure of genetic
+  microsatellite data, Bruvo \emph{et al.} developed a measure of genetic
   distance similar to band-sharing indices used with dominant data,
   but taking into account mutational distances between alleles.  A
   matrix is created containing all differences in repeat count between
@@ -72,7 +73,6 @@
   limit.  In this case, \code{Bruvo.distance} returns \code{NA}.
 }
 \seealso{
-  \code{\link{distance.matrix.1locus}},
   \code{\link{meandistance.matrix}}, \code{\link{Lynch.distance}}
 }
 \examples{

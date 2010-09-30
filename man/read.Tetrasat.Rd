@@ -5,20 +5,15 @@ Read Data from a TETRASAT Input File
 }
 \description{
 Given a file containing genotypes in the TETRASAT format,
-\code{read.Tetrasat} produces a vector containing the population
-identity of each individual as well as a two-dimensional list of vectors
-containing the genotypes.
+\code{read.Tetrasat} produces a \code{genambig} object containing
+genotypes and population identities from the file.
 }
 \usage{
-read.Tetrasat(infile, missing = -9)
+read.Tetrasat(infile)
 }
 \arguments{
   \item{infile}{
 A character string of the file path to be read.
-}
-  \item{missing}{
-A numerical value to be used to indicate missing data in the object
-produced by the function.
 }
 }
 \details{
@@ -26,26 +21,19 @@ produced by the function.
 specified by the software TETRASAT  and TETRA (see references for more
 information).  This is similar to the file format for GenePop but allows
 for up to four alleles per locus.  All alleles must be coded by two
-digits.  Another diference between the TETRASAT and GenePop formats is
+digits.  Another difference between the TETRASAT and GenePop formats is
 that in TETRASAT the sample name and genotypes are not separated by a
 comma, because the columns of data have fixed widths.
 
 Since TETRASAT files also contain information about which samples belong
-to which populations, a vector is also produced containing this
-information.  The elements of the vector are numbers representing the
-populations, and the names of the elements are the sample names.  This
-can be used as the popinfo argument for \code{estimate.freq}, for
-example, or converted to a column in an array for use in the
-\code{extracols} argument of \code{write.Structure}.
+to which populations, this information is put into the \code{PopInfo}
+slot of the \code{genambig} object.  Population names are not taken from
+the file.  The \code{Ploidies} slot is
+filled with the number 4, because all individuals should be tetraploid.
+The first line of the file is put into the \code{Description} slot.
 }
 \value{
-\item{PopData}{An integer vector containing the population ID for each
-  sample.  Sample names are used as the names of the elements.}
-\item{Genotypes}{A two-dimensional list of integer vectors, in the
-  standard polysat genotype format.  Samples are the first dimension,
-  and loci are the second dimension.  All white space is stripped from
-  sample names.  Each vector contains all unique alleles for that sample
-  at that locus.}
+A \code{genambig} object containing data from the file.
 }
 \references{
   \url{http://markwith.freehomepage.com/tetrasat.html}
@@ -74,16 +62,15 @@ Lindsay V. Clark
 \seealso{
 \code{\link{read.GeneMapper}}, \code{\link{write.Tetrasat}},
 \code{\link{read.ATetra}}, \code{\link{read.GenoDive}},
-\code{\link{read.Structure}}, \code{\link{dominant.to.codominant}},
+\code{\link{read.Structure}},
 \code{\link{read.SPAGeDi}}
 }
 \examples{
 \dontrun{
 # example from the Tetrasat website
 mydata <- read.Tetrasat("http://markwith.freehomepage.com/sample.txt")
-mydata$PopData
-mydata$Genotypes["BCRHE3",]
-mydata$Genotypes[["BR6","B1_Gtype"]]
+summary(mydata)
+viewGenotypes(mydata, loci="A1_Gtype")
 }
 
 # example with defined data:
@@ -112,5 +99,8 @@ cat("Sample Data", "A1_Gtype", "A10_Gtype", "B1_Gtype", "D7_Gtype",
 "BR 9                0406     04040404 07070707 02020202 03030303 07070707",
 sep="\n", file="TetrasatExample.txt")
 mydata2 <- read.Tetrasat("TetrasatExample.txt")
+
+summary(mydata2)
+viewGenotypes(mydata2, loci="B1_Gtype")
 }
 \keyword{file}

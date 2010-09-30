@@ -1,4 +1,4 @@
-citHeader("An article will be submitted to Molecular Ecology Resources:")
+citHeader("An article is in revision for Molecular Ecology Resources:")
 
 citEntry(entry="Article",
 	title = "polysat: an R package for polyploid microsatellite analysis",
