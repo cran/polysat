@@ -1,3 +1,11 @@
+Changes in version 1.0-1
+
+Bug fixed in the 'editGenotypes' method for "genambig" objects.
+stringsAsFactors=FALSE was added for the data frame that is sent to the
+'edit' function, so that samples and loci are indexed correctly when genotypes
+are written back to the object that is returned.  Version 1.0 would rearrange
+the genotypes if the samples or loci were not in alphabetical order.
+
 Changes in version 1.0
 
 The S4 classes "gendata", "genambig", and "genbinary" and their accompanying
@@ -28,5 +36,5 @@ The new function 'deSilvaFreq' performs an iterative computation to estimate
 allele freqencies in populations with uniform, even-numbered ploidy and a
 known selfing rate.  The old function 'estimate.freq' is renamed 'simpleFreq'.
 
-A function 'write.freq.SPAGeDi' is added to export allele frequencies to 
+A function 'write.freq.SPAGeDi' is added to export allele frequencies to
 SPAGeDi.

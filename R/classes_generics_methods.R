@@ -665,7 +665,8 @@ setMethod("editGenotypes", "genambig",
               }
               samvect <- rep(samples, times=length(loci))
               locvect <- rep(loci, each=length(samples))
-              genframe <- data.frame(Samples=samvect, Loci=locvect, dummyarray)
+              genframe <- data.frame(Samples=samvect, Loci=locvect, dummyarray,
+                                     stringsAsFactors=FALSE)
               # open data frame for editing by user
               cat("Edit the alleles, then close the data editor window.", sep="\n")
               genframe <- edit(genframe)
