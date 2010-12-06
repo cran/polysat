@@ -1,3 +1,15 @@
+Changes in version 1.1-0
+
+read.POPDIST, write.POPDIST, and freq.to.genpop functions added.
+
+read.Tetrasat function changed so that the comment line can't be accidentally
+read as a "Pop" line if it contains the letters "pop".  The documentation for
+this function now also instructs the user not to have any locus name contain
+the letters "pop" adjacent to each other.
+
+write.Tetrasat function changed so that if the 'samples' argument excludes
+some populations, there won't be a "Pop" line for these populations.
+
 Changes in version 1.0-1
 
 Bug fixed in the 'editGenotypes' method for "genambig" objects.

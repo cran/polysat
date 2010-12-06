@@ -639,3 +639,28 @@ write.freq.SPAGeDi <- function(freqs, usatnts, file="", digits=2,
     write.table(fr, file=file, sep="\t", col.names=TRUE, row.names=FALSE,
                 quote=FALSE)
 }
+
+freq.to.genpop <- function(freqs, pops=row.names(freqs),
+            loci=unique(as.matrix(as.data.frame(strsplit(names(freqs),
+                  split=".",fixed=TRUE),stringsAsFactors=FALSE))[1,])){
+    # clean up loci
+    loci <- loci[loci!="Genomes"]
+
+    # get population sizes
+    popsizes <- freqs[pops, "Genomes"]
+
+    # get an index of columns containing these loci
+    loccol <- integer(0)
+    for(L in loci){
+        loccol <- c(loccol, grep(L, names(freqs), fixed=TRUE))
+    }
+    # get a table just for these populations and loci
+    subfreq <- freqs[pops, loccol]
+
+    # convert allele frequencies to allele counts
+    for(i in 1:length(subfreq)){
+        subfreq[[i]] <- round(popsizes * subfreq[[i]])
+    }
+
+    return(subfreq)
+}

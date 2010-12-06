@@ -310,6 +310,7 @@ read.Tetrasat <- function(infile){
     rawdata<-readLines(infile)
     #find which lines delimit populations
     popindex<-grep("pop",rawdata,ignore.case=TRUE,value=FALSE)
+    popindex<-popindex[popindex != 1]
     #get a character vector of loci, whether they were stored in one or
     #several lines
     loci<-rawdata[2:(popindex[1]-1)]
@@ -398,5 +399,69 @@ read.ATetra<-function(infile){
                  as.integer(rawdata[[m]][2]))<-thesealleles
     }
     #return population data and genotypes
+    return(object)
+}
+
+read.POPDIST <- function(infiles){
+    # read the files into a character vector
+    rawdata <- readLines(infiles[1])
+    if(length(infiles) > 1){
+        popindex<-(1:length(rawdata))[substr(rawdata,1,3) %in%
+                                    c("Pop", "pop", "POP")]
+        popindex<-popindex[popindex != 1]
+
+        firstpop <- popindex[1]
+        for(i in 2:length(infiles)){
+            rawdata2 <- readLines(infiles[i])
+            if(!identical(rawdata[2:firstpop],rawdata2[2:firstpop]))
+               stop(paste("Loci not identical between",infiles[1],
+                          "and",infiles[i]))
+            rawdata <- c(rawdata, rawdata2[firstpop:length(rawdata2)])
+        }
+    }
+
+    #find which lines delimit populations
+    popindex<-(1:length(rawdata))[substr(rawdata,1,3) %in%
+                                    c("Pop", "pop", "POP")]
+    popindex<-popindex[popindex != 1]
+    #get a character vector of loci, whether they were stored in one or
+    #several lines
+    loci<-rawdata[2:(popindex[1]-1)]
+    if(length(loci) == 1){loci<-strsplit(loci,",")[[1]]}
+    #find which lines contain genotype data
+    samindex<-c(popindex[1]:length(rawdata))
+    samindex<-samindex[!samindex %in% popindex]
+    # set up the genambig object
+    object<-new("genambig", samples=1:length(samindex) ,loci=loci)
+    Description(object) <- rawdata[1]
+    # get population names
+    for(p in 1:length(popindex)){
+        PopNames(object)[p] <- strsplit(rawdata[popindex[p]+1],
+                                        "\t,",fixed=TRUE)[[1]][1]
+    }
+
+    # Extract data for individuals
+    for(i in 1:length(samindex)){
+        # get PopInfo
+        PopInfo(object)[i]<-match(max(popindex[popindex < samindex[i]]),
+                                  popindex)
+        # get genotypes
+        genotypestring <- strsplit(rawdata[samindex[i]],"\t,")[[1]][2]
+        thesegenotypes <- strsplit(genotypestring,split="[[:blank:]]")[[1]]
+        thesegenotypes <- thesegenotypes[thesegenotypes != ""]
+        Ploidies(object)[i] <- nchar(thesegenotypes[1])/2
+
+        for(j in 1:length(loci)){
+            thesealleles <- substring(thesegenotypes[j],
+                                      (1:Ploidies(object)[i])*2-1,
+                                      (1:Ploidies(object)[i])*2)
+            thesealleles <- unique(as.integer(thesealleles))
+            thesealleles <- thesealleles[thesealleles != 0]
+            if(length(thesealleles) != 0){
+                Genotype(object, i, j) <- thesealleles
+            }
+        }
+    }
+
     return(object)
 }

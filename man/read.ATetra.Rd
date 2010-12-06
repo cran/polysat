@@ -47,7 +47,7 @@ Lindsay V. Clark
   \code{\link{write.ATetra}}, \code{\link{read.Tetrasat}},
   \code{\link{read.GeneMapper}},
 \code{\link{read.Structure}}, \code{\link{read.GenoDive}},
-\code{\link{read.SPAGeDi}}
+\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}}
 }
 \examples{
 # create a file to be read

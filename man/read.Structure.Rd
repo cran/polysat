@@ -75,7 +75,7 @@ correctly.
 
 If the file does not contain sample names, set \code{labels=FALSE}.  The
 samples will be numbered instead, and if you like you can use the
-\code{Samples<-} function to edit the sample names of the genotype object after 
+\code{Samples<-} function to edit the sample names of the genotype object after
 import.  Likewise, if \code{markernames=FALSE}, the
 loci will be numbered automatically by the column names that
 \code{read.table} creates, but these can also be edited after the fact.
@@ -116,7 +116,7 @@ Lindsay V. Clark
 \code{\link{write.Structure}}, \code{\link{read.GeneMapper}},
 \code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
 \code{\link{read.GenoDive}},
-\code{\link{read.SPAGeDi}}
+\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}}
 }
 \examples{
 # create a file to read (normally done in a text editor or spreadsheet

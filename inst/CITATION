@@ -9,7 +9,7 @@ citEntry(entry="Article",
 	pages = "",
 	number = "",
         textVersion =
-        "Clark, L.V. and Jasieniuk, M.  polysat: an R package for polyploid microsatellite analysis.  Molecular Ecology Resources (in review)."
+        "Clark, L.V. and Jasieniuk, M.  polysat: an R package for polyploid microsatellite analysis.  Molecular Ecology Resources (accepted, in revision)."
          )
 
 

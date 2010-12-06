@@ -137,7 +137,8 @@ The sample names from \code{samples} will be used as row
 \seealso{
   \code{\link{read.Structure}}, \code{\link{write.GeneMapper}},
   \code{\link{write.GenoDive}}, \code{\link{write.SPAGeDi}},
-  \code{\link{write.ATetra}}, \code{\link{write.Tetrasat}}
+  \code{\link{write.ATetra}}, \code{\link{write.Tetrasat}},
+\code{\link{write.POPDIST}}
 
 }
 \examples{

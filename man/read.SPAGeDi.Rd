@@ -90,7 +90,8 @@ Lindsay V. Clark
 \code{\link{write.SPAGeDi}}, \code{\link{genbinary.to.genambig}},
 \code{\link{read.table}}, \code{\link{read.GeneMapper}},
 \code{\link{read.GenoDive}}, \code{\link{read.Structure}},
-\code{\link{read.ATetra}}, \code{\link{read.Tetrasat}}
+\code{\link{read.ATetra}}, \code{\link{read.Tetrasat}},
+\code{\link{read.POPDIST}}
 }
 \examples{
 # create a file to read (usually done with spreadsheet software or a

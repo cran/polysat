@@ -59,7 +59,7 @@ Lindsay V. Clark
 
 \seealso{
 \code{\link{read.ATetra}}, \code{\link{write.Tetrasat}},
-\code{\link{write.GeneMapper}}
+\code{\link{write.GeneMapper}}, \code{\link{write.POPDIST}}
 }
 \examples{
 # set up sample data (usually done by reading files)

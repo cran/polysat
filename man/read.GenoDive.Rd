@@ -73,7 +73,7 @@ Lindsay V. Clark
 \code{\link{read.GeneMapper}}, \code{\link{write.GenoDive}},
 \code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
 \code{\link{read.Structure}},
-\code{\link{read.SPAGeDi}}
+\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}}
 }
 \examples{
 # create data file (normally done in a text editor or spreadsheet software)

@@ -28,8 +28,9 @@ working with microsatellite data of any ploidy level, including
 populations of mixed ploidy.  It can convert genotype data between
 different formats, including Applied Biosystems GeneMapper\textregistered,
 binary
-presence/absence data, ATetra, Tetra/Tetrasat, GenoDive, SPAGeDi, and
-Structure.  It can also calculate pairwise genetic distances between
+presence/absence data, ATetra, Tetra/Tetrasat, GenoDive, SPAGeDi,
+Structure, and POPDIST.  It can also calculate pairwise genetic distances
+between
 samples, assist the user in estimating ploidy based on allele number,
 and estimate allele frequencies and $F_{ST}$.  Due to the
 versatility of the R programming environment and the simplicity of how
@@ -616,16 +617,18 @@ is described in the next section.
 
 \subsection{Data import }
 \label{sec:autoimport}
-Three other population genetic programs that I am aware of can handle
+Four other population genetic programs that I am aware of can handle
 polyploid microsatellite data with allele copy number ambiguity under
 polysomic inheritance (autopolyploidy): Structure \cite{falush07,
-  falush03, pritchard00, hubisz09}, SPAGeDi \cite{hardy02}, and
+  falush03, pritchard00, hubisz09}, SPAGeDi \cite{hardy02},
 GenoDive \cite{meirmans04}
-(\url{http://www.bentleydrummer.nl/software/software/GenoDive.html}).
+(\url{http://www.bentleydrummer.nl/software/software/GenoDive.html}),
+and POPDIST \cite{guldbrandtsen00}\cite{tomiuk09}.
 
 In the ``doc'' directory of the polysat installation there are
-files called ``structureExample.txt'', ``spagediExample.txt'', and
-``genodiveExample.txt''.  To import these into \texttt{"genambig"}
+files called ``structureExample.txt'', ``spagediExample.txt'',
+``genodiveExample.txt'', ``POPDISTexample1.txt'' and ``POPDISTexample2.txt''.
+To import these into \texttt{"genambig"}
 objects, first copy them into your working directory, then perform the
 assignments:
 
@@ -633,13 +636,14 @@ assignments:
 GDdata <- read.GenoDive("genodiveExample.txt")
 Structdata <- read.Structure("structureExample.txt", ploidy = 8)
 Spagdata <- read.SPAGeDi("spagediExample.txt")
+PDdata <- read.POPDIST(c("POPDISTexample1.txt", "POPDISTexample2.txt"))
 @
 
 Use \texttt{summary}, \texttt{viewGenotypes}, and the accessor
 functions (section \ref{sec:genambig}) to examine the contents of the three
-\texttt{"genambig"} objects that you have just created.  All three of
+\texttt{"genambig"} objects that you have just created.  All four of
 these functions take population information from the file and put it
-into the object.  The Structure and SPAGeDi files are coded in a way
+into the object.  The Structure, SPAGeDi, and POPDIST files are coded in a way
 that indicates the ploidy of each individual, so this information is
 written to the \texttt{"genambig"} object as well.
 
@@ -653,7 +657,6 @@ file.
 \begin{Sinput}
 > ?read.Structure
 > ?read.SPAGeDi
-> ?read.GenoDive
 \end{Sinput}
 \end{Schunk}
 
@@ -715,7 +718,7 @@ PAdata <- genbinary.to.genambig(PAdata)
 \subsection{Data export}
 \label{sec:autoexport}
 
-Autopolyploid data can also be exported in the same five formats that are
+Autopolyploid data can also be exported in the same six formats that are
 available for import.
 
 The \texttt{write.Structure} function requires that an overall ploidy
@@ -771,6 +774,16 @@ If you are using SPAGeDi to calculate relationship and kinship
 coefficients, also see the function \texttt{write.freq.SPAGeDi} for
 exporting allele frequencies from polysat to SPAGeDi for use in these
 calculations.
+
+The \texttt{write.POPDIST} function does not have any options for
+formatting.  In the example below, the \texttt{samples} argument is
+used to ensure that each population has uniform ploidy, which is a
+requirement of the POPDIST software.
+
+<<>>=
+write.POPDIST(simgen, samples = Samples(simgen, ploidies=4),
+              file = "simgenPOPDIST.txt")
+@
 
 \texttt{write.GeneMapper} is very straightforward, without any special
 formatting options.  This function was used to create the
@@ -942,6 +955,20 @@ frequencies in the format that is read by SPAGeDi.
 write.freq.SPAGeDi(simfreq, usatnts=Usatnts(simgen), file="SPAGfreq.txt")
 @
 
+The R package \texttt{adegenet} can perform a number of calculations
+from allele frequencies, including five inter-population distance
+measures as well as Correspondance Analysis.  The allele frequency
+tables produced by \texttt{polysat} can be converted to a format that
+can be read by \texttt{adegenet}.
+
+<<>>=
+gpsimfreq <- freq.to.genpop(simfreq)
+@
+
+The object \texttt{gpsimfreq} that you just created can now be passed
+to the function \texttt{genpop} as the \texttt{tab} argument.  See
+\texttt{?freq.to.genpop} for example code.
+
 \section{Functions for allopolyploid data}
 
 In order to properly analyze microsatellites as codominant markers in
@@ -1088,8 +1115,8 @@ used for character strings.
 We are revising an article for Molecular Ecology Resources:
 
 Clark, LV and Jasieniuk, M.  {\sc polysat}: an R package for polyploid
-microsatellite analysis.  \emph{Molecular Ecology Resources} (in
-review).
+microsatellite analysis.  \emph{Molecular Ecology Resources}
+(accepted, in revision).
 
 Feel free to email me at lvclark@ucdavis.edu with any questions,
 comments, or bug reports!
@@ -1120,6 +1147,11 @@ correlated allele frequencies. \emph{Genetics}, 164, 1567-1587.
 FALUSH, D., STEPHENS, M. and PRITCHARD, J. K. 2007. Inference of
 population structure using multilocus genotype data: dominant markers
 and null alleles. \emph{Molecular Ecology Notes}, 7, 574-578.
+
+\bibitem{guldbrandtsen00}
+  GULDBRANDTSEN, B., TOMIUK, J. AND LOESCHCKE, B.  2000.  POPDIST version
+1.1.1: A program to calculate population genetic distance and identity
+measures.  \emph{Journal of Heredity}, 91, 178-179.
 
 \bibitem{hardy02}
 HARDY, O. J. and VEKEMANS, X. 2002. SPAGEDi: a versatile computer
@@ -1157,6 +1189,12 @@ organisms. \emph{Molecular Ecology Notes}, 4, 792-794.
 
 \bibitem{pritchard00}
 PRITCHARD, J. K., STEPHENS, M. and DONNELLY, P. 2000. Inference of population structure using multilocus genotype data. \emph{Genetics}, 155, 945-959.
+
+\bibitem{tomiuk09}
+  TOMIUK, J. GULDGRANDTSEN, B. AND LOESCHCKE, B.  2009.  Genetic
+similarity of polyploids: a new version of the computer program POPDIST
+(version 1.2.0) considers intraspecific genetic differentiation.
+\emph{Molecular Ecology Resources}, 9, 1364-1368.
 
 \bibitem{vanpuyvelde10}
 VAN PUYVELDE, K., VAN GEERT, A. and TRIEST, L. 2010. ATETRA, a new software program to analyse tetraploid microsatellite data: comparison with TETRA and TETRASAT. \emph{Molecular Ecology Resources}, 10, 331-334.

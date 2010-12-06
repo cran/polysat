@@ -287,7 +287,8 @@ write.Tetrasat<-function(object, samples=Samples(object), loci=Loci(object),
     if(!all(Ploidies(object)[samples] == 4))
         stop("Ploidy must be 4.")
 
-    allpops<-unique(PopInfo(object)) # a vector of populations to cycle through
+    # a vector of populations to cycle through
+    allpops<-unique(PopInfo(object)[samples])
     # set up vector of lines to write to file
     lines<-c(Description(object)[1],loci)
     # where does population/genotype data begin?
@@ -451,4 +452,89 @@ write.ATetra<-function(object, samples=Samples(object), loci=Loci(object),
 
     # write the file
     cat(lines, sep="\n", file=file)
+}
+
+write.POPDIST <- function(object, samples=Samples(object),
+                          loci=Loci(object), file=""){
+    # error messages
+    if(!all(!is.na(PopInfo(object)[samples])))
+        stop("PopInfo needed")
+    if(!all(!is.na(Ploidies(object)[samples])))
+        stop("Ploidies needed")
+    # start a vector of lines to write to the file
+    Lines <- c(Description(object)[1], loci)
+    # make a vector to index all the lines containing samples
+    samindex <- integer(0)
+
+    # add one population at a time
+    for(p in unique(PopInfo(object)[samples])){
+        Lines <- c(Lines, "Pop")
+        # add each individual
+        for(s in samples[samples %in% Samples(object, populations=p)]){
+            Lines <- c(Lines, paste(PopNames(object)[p],"\t,",sep=""))
+            samindex <- c(samindex, length(Lines))
+            names(samindex)[length(samindex)] <- s
+        }
+        # warning message for mixed ploidy
+        if(length(unique(
+             Ploidies(object)[samples[samples %in% Samples(object,
+                                                           populations=p)]]))>1)
+            warning(paste("Mixed ploidy in population",p,
+                          "; POPDIST may reject file."))
+    }
+
+    # Convert alleles to two digits then add to lines
+    for(L in loci){
+        thesegen <- Genotypes(object, samples, L)
+        if(max(mapply(max, thesegen)) > 99){
+            if(!is.na(Usatnts(object)[L]) && Usatnts(object)[L] > 1){
+                thesegen <- array(mapply(function(value){
+                        if(value[1]==Missing(object)){
+                            value
+                        } else {
+                            floor(value/Usatnts(object)[L])
+                        }},
+                                   thesegen, SIMPLIFY=FALSE),
+                                  dim=c(length(samples),1),
+                                  dimnames=list(samples, L))
+            }
+
+            while(max(mapply(max, thesegen)) > 99){
+                thesegen <- array(mapply(function(value){
+                  if(value[1]==Missing(object)){
+                      value
+                  } else {
+                      value - 10
+                  }},
+                                         thesegen, SIMPLIFY=FALSE),
+                                  dim=c(length(samples),1),
+                                  dimnames=list(samples, L))
+            }
+        }
+
+        for(s in samples){
+            if(thesegen[[s,L]][1]==Missing(object)){
+                alleles <- "00"
+            } else {
+                alleles <- as.character(thesegen[[s,L]])
+            }
+            if(length(alleles) > Ploidies(object)[s]){
+                alleles <- sample(alleles, Ploidies(object)[s])
+                warning(paste("Alleles randomly removed:",s,L))
+            }
+            Lines[samindex[s]] <- paste(Lines[samindex[s]], " ", sep="")
+            for(a in 1:Ploidies(object)[s]){
+                if(a > length(alleles)){
+                    Lines[samindex[s]] <- paste(Lines[samindex[s]],"00",sep="")
+                } else {
+                    if(nchar(alleles[a])==1)
+                        alleles[a] <- paste("0",alleles[a],sep="")
+                    Lines[samindex[s]] <- paste(Lines[samindex[s]],
+                                                alleles[a],sep="")
+                }
+            }
+        }
+    }
+
+    cat(Lines, file=file, sep="\n")
 }

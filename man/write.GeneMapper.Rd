@@ -76,7 +76,7 @@ Lindsay V. Clark
 \seealso{
 \code{\link{read.GeneMapper}}, \code{\link{write.Structure}},
 \code{\link{write.GenoDive}}, \code{\link{write.Tetrasat}},
-\code{\link{write.ATetra}},
+\code{\link{write.ATetra}}, \code{\link{write.POPDIST}},
 \code{\link{write.SPAGeDi}}, \code{\link{editGenotypes}}
 }
 \examples{

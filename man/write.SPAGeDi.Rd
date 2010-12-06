@@ -102,7 +102,8 @@ Lindsay V. Clark
   \code{\link{read.SPAGeDi}}, \code{\link{write.freq.SPAGeDi}},
   \code{\link{write.GenoDive}},
 \code{\link{write.Structure}}, \code{\link{write.GeneMapper}},
-\code{\link{write.ATetra}}, \code{\link{write.Tetrasat}}
+\code{\link{write.ATetra}}, \code{\link{write.Tetrasat}}, 
+\code{\link{write.POPDIST}}
 }
 \examples{
 # set up data to write (usually read from a file)

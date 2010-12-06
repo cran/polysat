@@ -81,7 +81,7 @@ Lindsay V. Clark
 \code{\linkS4class{genambig}}, \code{\link{read.Structure}},
 \code{\link{read.GenoDive}}, \code{\link{read.SPAGeDi}},
 \code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
-\code{\link{write.GeneMapper}}
+\code{\link{write.GeneMapper}}, \code{\link{read.POPDIST}}
 }
 \examples{
 # create a table of data
