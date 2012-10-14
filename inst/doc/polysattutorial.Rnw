@@ -1,15 +1,18 @@
-% \VignetteIndexEntry{polysat version 1.2 Tutorial Manual}
+% \VignetteIndexEntry{polysat version 1.3 Tutorial Manual}
 % \VignetteDepends{combinat, methods, polysat}
 
 \documentclass[12pt]{article}
 
-\usepackage{hyperref}
+\usepackage{Sweave}
 \usepackage{tikz}
 \usetikzlibrary{shapes,arrows}
+\usepackage{array}
+\usepackage{hyperref}
 
-\title{polysat version 1.2 Tutorial Manual}
-\author{Lindsay V. Clark <lvclark@ucdavis.edu>\\
-  UC Davis Department of Plant Sciences\\
+\title{polysat version 1.3 Tutorial Manual}
+\author{Lindsay V. Clark <lvclark@illinois.edu>\\
+  University of Illinois, Urbana-Champaign\\
+  Department of Crop Sciences\\
 \url{http://openwetware.org/wiki/Polysat}}
 \date{\today}
 
@@ -31,8 +34,8 @@ populations of mixed ploidy.  It can convert genotype data between
 different formats, including Applied Biosystems GeneMapper\textregistered,
 binary
 presence/absence data, ATetra, Tetra/Tetrasat, GenoDive, SPAGeDi,
-Structure, and POPDIST.  It can also calculate pairwise genetic distances
-between
+Structure, POPDIST, and STRand.  It can also calculate pairwise genetic 
+distances between
 samples, assist the user in estimating ploidy based on allele number,
 and estimate allele frequencies and $F_{ST}$.  Due to the
 versatility of the R programming environment and the simplicity of how
@@ -101,7 +104,8 @@ minimum height=2em]
 \node at (5, 0) [block] (summary) {Check dataset with \texttt{summary}.};
 \node at (10, 0) [block] (gendiv) {Analysis with \texttt{assignClones}
 or \texttt{genotypeDiversity}};
-\node at (0, -3) [block] (binary) {Convert to presence/absence
+\node at (0, -3) [block] (binary) {Run \texttt{alleleDiversity}, and/or 
+  convert to presence/absence
   (\texttt{genbinary} class) for analysis or export.};
 \node at (5,-3) [block] (usatnts) {Add population and locus
   information (\texttt{PopNames}, \texttt{PopInfo},
@@ -114,8 +118,8 @@ or \texttt{genotypeDiversity}};
   the dataset?};
 \node at (0, -7) [decision] (plknown) {Do you know the ploidies?};
 \node at (5, -11) [cloud] (plfilled) {};
-\node at (1.9, -9.9) [block] (ploidies) {Add ploidy info with
-  \texttt{Ploidies} function.};
+\node at (2, -9.8) [block] (ploidies) {\texttt{reformatPloidies} if 
+  necessary, then add ploidy info with \texttt{Ploidies} function.};
 \node at (-.6, -13) [block] (plest) {Use \texttt{estimatePloidy} function.};
 % \node at (5, -14) [block] (mating) {Use \texttt{clonalScore} and
 %  related functions to determine reproductive mode.};
@@ -268,10 +272,6 @@ Usatnts(simgen)
 
 To edit genotypes after importing the data:
 
-<<echo=false>>=
-if(interactive()) simgen <- editGenotypes(simgen, maxalleles = 4)
-@
-
 \begin{Schunk}
 \begin{Sinput}
 > simgen <- editGenotypes(simgen, maxalleles = 4)
@@ -303,13 +303,8 @@ Edit the new.ploidy values, then close the data editor window.
 \end{Schunk}
 
 <<echo=false>>=
-if(interactive()){
-    simgen <- estimatePloidy(simgen)
-    Ploidies(simgen)[Ploidies(simgen) == 1] <- 2
-    Ploidies(simgen)[Ploidies(simgen) == 3] <- 4
-} else {
-    Ploidies(simgen) <- read.table("vignettebuild/simgenPloidies2.txt")[[1]]
-}
+simgen <- reformatPloidies(simgen, output="sample")
+Ploidies(simgen) <- read.table("vignettebuild/simgenPloidies2.txt")[[1]]
 @
 
 Take another look at the summary now that you have added this extra data.
@@ -542,8 +537,10 @@ alleles for a particular sample at a particular locus),
 \texttt{Missing} (the symbol for a missing genotype),
 \texttt{Usatnts} (a vector containing the repeat length of each locus,
 or 1 if alleles for that locus are already in terms of repeat number
-rather than nucleotides), \texttt{Ploidies} (a vector containing the
-ploidy of each sample, or \texttt{NA} if unknown), \texttt{PopNames}
+rather than nucleotides), \texttt{Ploidies} (an object of the class 
+\texttt{"ploidysuper"}, which can contain a single value, a vector indexed 
+by sample or locus, or a matrix indexed by sample and locus, any of which can
+contain integers to indicate ploidy), \texttt{PopNames}
 (the name of each population), and \texttt{PopInfo} (the population
 identity of each sample, using integers that correspond to the
 position of the population name in \texttt{PopNames}).  You'll notice
@@ -607,7 +604,7 @@ Ploidies(mydataset)
 @
 \label{ploidies}
 <<>>=
-Ploidies(mydataset)["indC1"] <- 6
+Ploidies(mydataset)["indC1",] <- 6
 Ploidies(mydataset)
 Usatnts(mydataset) <- c(2,2,2)
 Usatnts(mydataset)
@@ -664,6 +661,90 @@ Genotypes(moredata, loci="L1") <- list(c(126,130,136,138), c(124,126,128))
 mydataset2 <- merge(mydataset, moredata)
 mydataset2
 @
+
+\subsection{How ploidy data is stored: ``ploidysuper'' and subclasses}
+\label{sec:ploidies}
+
+You may have noticed that in the above example, ploidy information was stored 
+in a matrix, whereas in section \ref{sec:creatingdataset} it was stored in a 
+vector following the use of the \texttt{estimatePloidy} function.  In fact, 
+ploidy can be stored in four formats: a single value if the entire dataset 
+has uniform ploidy, a vector indexed by sample if ploidy varies by sample, a 
+vector indexed by locus if ploidy varies by locus (\emph{e.g.} if the species
+is polyploid undergoing diploidization), or a matrix indexed by sample and 
+locus (\emph{e.g} if some of your loci are on sex chromosomes).  The object in
+the \texttt{Ploidies} slot of the dataset is one of four subclasses of the 
+\texttt{"ploidysuper"} class (see table below), and this in turn has a slot
+called \texttt{pld} that contains the ploidy data.  To make things simple from 
+the user's perspective, the \texttt{Ploidies} accessor and replacement 
+functions interact directly with this \texttt{pld} slot.
+\\
+\\
+\begin{tabular}{ | l | m{3cm} | m{5cm} | }
+  \hline
+  \bf{Class} & \bf{Format} & \bf{Use} \\ \hline
+  ploidyone & unnamed vector of length one & 
+  uniform ploidy for entire dataset \\ \hline
+  ploidysample & vector indexed by sample & samples vary in ploidy \\ \hline
+  ploidylocus & vector indexed by locus & loci vary in copy number \\ \hline
+  ploidymatrix & matrix indexed by sample, then locus & 
+  different samples have different numbers of copies of different loci\\
+  \hline
+\end{tabular}
+\\
+\\
+Note that most analyses that use ploidy information assume completely random
+segregation of alleles.  If you are going to specify ploidy as varying by locus,
+make sure that random segregation is actually the case for all loci.  (See 
+sections on working with autopolyploid vs. allopolyploid data.)  For example,
+if a locus is present on two homeologous chromosome pairs, you may record the
+ploidy for that locus as being four.  However, since these chromosomes do not
+pair with each other at meiosis, many of the analyses in polysat that utilize
+ploidy do not apply.
+
+Many of the data import functions for polysat will detect the ploidies of 
+genotypes and automatically create a \texttt{"genambig"} object with the 
+simplest ploidy format possible.  Additionally, when the 
+\texttt{estimatePloidies} function  is used, ploidy is automatically changed to 
+being
+indexed by sample.  However, the user may also want to manually switch formats,
+and the \texttt{reformatPloidies} function exists for this purpose.
+
+<<>>=
+ploidyexample <- new("genambig")
+Samples(ploidyexample)
+Loci(ploidyexample)
+Ploidies(ploidyexample)
+ploidyexample <- reformatPloidies(ploidyexample, output="locus")
+Ploidies(ploidyexample)
+ploidyexample <- reformatPloidies(ploidyexample, output="sample")
+Ploidies(ploidyexample)
+ploidyexample <- reformatPloidies(ploidyexample, output="one")
+Ploidies(ploidyexample)
+Ploidies(ploidyexample) <- 4
+ploidyexample <- reformatPloidies(ploidyexample, output="matrix")
+Ploidies(ploidyexample)
+@ 
+
+See \texttt{?reformatPloidies} for more information on how to change formats
+when there is already data in the \texttt{Ploidies} slot.
+
+Ploidy may be indexed using square brackets, like normal vectors and matrices:
+
+<<>>=
+Ploidies(ploidyexample)["ind1", "loc1"]
+@ 
+
+However, for programming purposes, ploidy can also be indexed by passing
+\texttt{samples} and \texttt{loci} arguments to the \texttt{Ploidies}
+accessor function.  This allows new functions to be robust to the ploidy
+format that is being used.
+
+<<>>=
+Ploidies(ploidyexample, "ind1", "loc1")
+ploidyexample <- reformatPloidies(ploidyexample, output="one")
+Ploidies(ploidyexample, "ind1", "loc1")
+@ 
 
 \subsection{The ``gendata'' and ``genbinary'' classes}
 \label{sec:genbinary}
@@ -779,9 +860,9 @@ file.
 \end{Sinput}
 \end{Schunk}
 
-polysat also supports two genotype formats that work for either
+polysat also supports three genotype formats that work for either
 autopolyploids or allopolyploids, but do not contain any population,
-ploidy, or other information: GeneMapper, and binary
+ploidy, or other information: GeneMapper, STRand, and binary
 presence/absence.  The tutorial in the beginning of this manual uses
 \texttt{read.GeneMapper} to import data.  The
 ``GenaMapperExample.txt'' file contains the minimum amount of
@@ -799,6 +880,21 @@ GMdata <- read.GeneMapper(c("GeneMapperCBA15.txt",
                             "GeneMapperCBA23.txt",
                             "GeneMapperCBA28.txt"))
 @
+
+\texttt{read.STRand} takes a slightly modified version of the BTH format 
+output by the allele-calling software STRand \cite{toonen01}.  Since this 
+format uses one row 
+per individual, the modified format for \texttt{polysat} includes a column to
+contain population information.
+
+<<>>=
+# view the format
+read.table("STRandExample.txt", sep="\t", header=TRUE)
+# import the data
+STRdata <- read.STRand("STRandExample.txt")
+Samples(STRdata)
+PopNames(STRdata)
+@ 
 
 A binary presence/absence matrix can be read into R using the base
 function \texttt{read.table}.  Arguments to this function give options
@@ -1079,8 +1175,17 @@ see section \ref{sec:genofreq}.
 \subsection{Population statistics}
 \label{sec:popstat}
 
-\subsubsection{Allele frequencies}
+\subsubsection{Allele diversity and frequencies}
 \label{sec:allelefreq}
+Allele diversity, \emph{i.e.} the number of alleles found at each locus, is
+easily calculated in polysat.
+
+<<>>=
+simal <- alleleDiversity(simgen)
+simal$counts
+simal$alleles[["PopA","loc1"]]
+@ 
+
 There are two functions in polysat for estimating allele
 frequencies.  If all of your individuals are the same, even-numbered
 ploidy and if you have a reasonable estimate of the selfing rate in
@@ -1281,7 +1386,8 @@ Assuming a distance matrix can be calculated using
 \texttt{meandistance.matrix}, all downstream analyses (principal
 coordinate analysis, clone assignment, genotype diversity) are appropriate.
 
-The \texttt{estimatePloidy} function works equally well on
+The \texttt{estimatePloidy}, \texttt{assignClones}, \texttt{genotypeDiversity},
+and \texttt{alleleDiversity} functions work equally well on
 autopolyploids and allopolyploids.
 
 Both \texttt{simpleFreq} and \texttt{deSilvaFreq} work under the
@@ -1344,7 +1450,7 @@ Clark, LV and Jasieniuk, M.  {\sc polysat}: an R package for polyploid
 microsatellite analysis.  \emph{Molecular Ecology Resources}
 11(3):562--566.
 
-Feel free to email me at lvclark@ucdavis.edu with any questions,
+Feel free to email me at lvclark@illinois.edu with any questions,
 comments, or bug reports!
 
 \begin{thebibliography}{99}
@@ -1433,6 +1539,11 @@ structure using multilocus genotype data. \emph{Genetics}, 155, 945-959.
 similarity of polyploids: a new version of the computer program POPDIST
 (version 1.2.0) considers intraspecific genetic differentiation.
 \emph{Molecular Ecology Resources}, 9, 1364-1368.
+
+\bibitem{toonen01}
+  TOONEN, R. J. and HUGHES, S.  2001.  Increased Throughput for Fragment
+  Analysis on ABI Prism 377 Automated Sequencer Using a Membrane Comb
+  and STRand Software.  \emph{Biotechniques}, 31, 1320-1324.
 
 \bibitem{vanpuyvelde10}
 VAN PUYVELDE, K., VAN GEERT, A. and TRIEST, L. 2010. ATETRA, a new software program to analyse tetraploid microsatellite data: comparison with TETRA and TETRASAT. \emph{Molecular Ecology Resources}, 10, 331-334.

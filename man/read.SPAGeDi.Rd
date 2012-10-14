@@ -59,6 +59,12 @@ genotype object that is returned.  If \code{allelesep=""},
 can be evenly divided by the number of digits per allele.  If not, zeros
 are added to the left of the genotype string before splitting it into
 alleles.
+
+The \code{Ploidies} slot of the \code{"genambig"} object that is created
+is initially indexed by both sample and locus, with ploidy being
+written to the slot on a per-genotype basis.  After all genotypes have
+been imported, \code{\link{reformatPloidies}} is used to convert
+\code{Ploidies} to the simplest possible format before the object is returned.
 }
 \value{
   Under the default where \code{returnspatcoord=FALSE}, a \code{genambig}
@@ -80,7 +86,7 @@ from the file.  Column names are the same as in the file.}
 
   Hardy, O. J. and Vekemans, X. (2002) SPAGeDi: a versatile computer
   program to analyse spatial genetic structure at the individual or
-  population levels.  \emph{Molecular Ecology Notes} \bold{2}, 618-620.
+  population levels.  \emph{Molecular Ecology Notes} \bold{2}, 618--620.
 }
 \author{
 Lindsay V. Clark
@@ -91,7 +97,7 @@ Lindsay V. Clark
 \code{\link{read.table}}, \code{\link{read.GeneMapper}},
 \code{\link{read.GenoDive}}, \code{\link{read.Structure}},
 \code{\link{read.ATetra}}, \code{\link{read.Tetrasat}},
-\code{\link{read.POPDIST}}
+\code{\link{read.POPDIST}}, \code{\link{read.STRand}}
 }
 \examples{
 # create a file to read (usually done with spreadsheet software or a

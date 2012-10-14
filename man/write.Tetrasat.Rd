@@ -65,16 +65,11 @@ A file is written but no value is returned.
   Liao, W. J., Zhu, B. R., Zeng, Y. F. and Zhang, D. Y.  (2008)
   TETRA: an improved program for population genetic analysis of
   allotetraploid microsatellite data.  \emph{Molecular Ecology Resources}
-  \bold{8}, 1260-1262.
+  \bold{8}, 1260--1262.
 }
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{read.Tetrasat}},
@@ -86,6 +81,7 @@ Lindsay V. Clark
 mysamples <- c("ind1", "ind2", "ind3", "ind4")
 myloci <- c("loc1", "loc2")
 mygendata <- new("genambig", samples = mysamples, loci = myloci)
+mygendata <- reformatPloidies(mygendata, output="one")
 Usatnts(mygendata) <- c(2, 3)
 Genotypes(mygendata, loci="loc1") <- list(c(202,204), c(204),
                                           c(200,206,208,212),
@@ -95,7 +91,7 @@ Genotypes(mygendata, loci="loc2") <- list(c(78,81,84),
                                           c(87), c(-9))
 PopInfo(mygendata) <- c(1,2,1,2)
 Description(mygendata) <- "An example for write.Tetrasat."
-Ploidies(mygendata) <- c(4,4,4,4)
+Ploidies(mygendata) <- 4
 
 # write a Tetrasat file
 write.Tetrasat(mygendata, file="tetrasattest.txt")

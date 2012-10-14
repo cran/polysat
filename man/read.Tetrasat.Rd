@@ -29,7 +29,8 @@ Since TETRASAT files also contain information about which samples belong
 to which populations, this information is put into the \code{PopInfo}
 slot of the \code{genambig} object.  Population names are not taken from
 the file.  The \code{Ploidies} slot is
-filled with the number 4, because all individuals should be tetraploid.
+filled with the number 4 (using the \code{"\linkS4class{ploidyone}"}
+class), because all individuals should be tetraploid.
 The first line of the file is put into the \code{Description} slot.
 
 Locus names should not contain the letters "pop", uppercase or lowercase,
@@ -51,22 +52,18 @@ A \code{genambig} object containing data from the file.
   Liao, W. J., Zhu, B. R., Zeng, Y. F. and Zhang, D. Y.  (2008)
   TETRA: an improved program for population genetic analysis of
   allotetraploid microsatellite data.  \emph{Molecular Ecology Resources}
-  \bold{8}, 1260-1262.
+  \bold{8}, 1260--1262.
 }
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{read.GeneMapper}}, \code{\link{write.Tetrasat}},
 \code{\link{read.ATetra}}, \code{\link{read.GenoDive}},
 \code{\link{read.Structure}},
-\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}}
+\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}},
+\code{\link{read.STRand}}
 }
 \examples{
 \dontrun{

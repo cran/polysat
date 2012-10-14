@@ -40,17 +40,10 @@ line is inserted and the matrix for the next locus is printed.
 \value{
 No value is returned.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
+
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{Genotypes}}

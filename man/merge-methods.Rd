@@ -24,7 +24,8 @@ merge(x, y, ...)
   }
   \item{y}{
     The other object to be merged.  Should be of the same class as
-    \code{x}.
+    \code{x}.  \code{y@Ploidies} must also be of the same class as
+    \code{x@Ploidies}.
   }
   \item{...}{
     Additional arguments specific to the method.

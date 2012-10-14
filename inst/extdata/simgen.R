@@ -30,6 +30,7 @@ simgen <- new("genambig", samples=c(paste("A", 1:100, sep=""),
 Description(simgen) <- "Simulated dataset"
 Usatnts(simgen) <- c(2, 3, 2)
 PopInfo(simgen) <- c(rep(1, 100), rep(2, 100), rep(3, 100))
+simgen <- reformatPloidies(simgen, output="sample")
 Ploidies(simgen) <- sample(c(2,4), 300, replace=TRUE)
 
 # simulate unambiguous genotypes

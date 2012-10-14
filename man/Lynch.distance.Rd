@@ -50,11 +50,6 @@ Lynch, M.  (1990)  The similarity index and DNA fingerprinting.
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
   \code{\link{Bruvo.distance}},

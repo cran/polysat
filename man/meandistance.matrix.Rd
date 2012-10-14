@@ -91,10 +91,10 @@ meandistance.matrix2(object, samples = Samples(object),
 
   \code{meandistance.matrix2} does not allow a genotype to have more
   alleles than the ploidy of the individual (as listed in the
-  \code{Ploidies} slot).
+  \code{Ploidies} slot).  Additionally, if \code{self} is greater than
+  zero, each population may only have one ploidy at each locus.
 }
-\references{
-}
+
 \seealso{
   \code{\link{Bruvo.distance}}, \code{\link{Bruvo2.distance}},
   \code{\link{Lynch.distance}}, \code{\link{meandist.from.array}},
@@ -125,7 +125,8 @@ mymat[[1]]["locus3",,]
 mymat[[2]]
 
 # add addtional info needed for meandistance.matrix2
-Ploidies(mygendata) <- c(4,4,4,4)
+mygendata <- reformatPloidies(mygendata, output="one")
+Ploidies(mygendata) <- 4
 PopInfo(mygendata) <- c(1,1,1,1)
 
 # calculate distances taking allele freqs into account

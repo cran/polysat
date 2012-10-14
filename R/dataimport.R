@@ -33,6 +33,7 @@ read.GeneMapper<-function(infiles){
     return(object)
 }
 
+## should read.GenoDivd find the ploidy of each genotype?
 read.GenoDive <- function(infile){
     rawdata<-readLines(infile)
     #information about number of samples, number of loci, etc. is in second line
@@ -133,12 +134,9 @@ read.Structure<-function(infile,ploidy,missingin=-9,sep="\t",markernames=TRUE,
                 thesealleles<-Missing(object)
             } else {
                 thesealleles<-thesealleles[thesealleles != missingin]
-                if(is.na(Ploidies(object)[s]) || Ploidies(object)[s] <
-                   length(rawalleles[rawalleles != missingin])){
-                    # get ploidy
-                    Ploidies(object)[s] <-
-                        length(rawalleles[rawalleles != missingin])
-                }
+                # get ploidy
+                Ploidies(object)[s,L] <-
+                   length(rawalleles[rawalleles != missingin])
             }
             Genotype(object,s,L)<-thesealleles
         }
@@ -147,6 +145,7 @@ read.Structure<-function(infile,ploidy,missingin=-9,sep="\t",markernames=TRUE,
             PopInfo(object)[s] <- rawdata[match(s, rawdata$Samples),"PopInfo"]
         }
     }
+    object <- reformatPloidies(object, output="collapse", na.rm=TRUE)
 
     # extract the extra columns, if needed
     if(getexcols){
@@ -248,11 +247,12 @@ read.SPAGeDi<-function(infile, allelesep="/", returnspatcoord=FALSE){
                 while(thesegenotypes[[L]][1]==0){
                     thesegenotypes[[L]]<-thesegenotypes[[L]][-1]
                 }
-            }
-            # get ploidy of sample
-            Ploidies(object)[s] <- max(sapply(thesegenotypes,length))
 
-            for(L in loci){
+                # get ploidy
+                if(thesegenotypes[[L]][1] != Missing(object)){
+                  Ploidies(object)[s,L] <- length(thesegenotypes[[L]])
+                }
+              
                 # remove zeros on the right
                 thesegenotypes[[L]]<-thesegenotypes[[L]][thesegenotypes[[L]] != 0]
                 # get unique alleles
@@ -281,13 +281,15 @@ read.SPAGeDi<-function(infile, allelesep="/", returnspatcoord=FALSE){
                 while(thesegenotypes[[L]][1]==0){
                     thesegenotypes[[L]]<-thesegenotypes[[L]][-1]
                 }
-            }
-            # get ploidy of sample
-            Ploidies(object)[s] <- max(sapply(thesegenotypes,length))
 
-            for(L in loci){
+                # get ploidy
+                if(thesegenotypes[[L]][1] != Missing(object)){
+                  Ploidies(object)[s,L] <- length(thesegenotypes[[L]])
+                }
+                
                 # remove zeros on the right
-                thesegenotypes[[L]]<-thesegenotypes[[L]][thesegenotypes[[L]] != 0]
+                thesegenotypes[[L]]<-
+                  thesegenotypes[[L]][thesegenotypes[[L]] != 0]
                 # get unique alleles
                 thesegenotypes[[L]]<-unique(thesegenotypes[[L]])
             }
@@ -295,6 +297,7 @@ read.SPAGeDi<-function(infile, allelesep="/", returnspatcoord=FALSE){
             Genotypes(object, samples=s)<-thesegenotypes
         }
     }
+    object <- reformatPloidies(object, output="collapse", na.rm=TRUE)
 
     # return the genotypes, popinfo, ploidies, and spatial coordinates
     if(!returnspatcoord){
@@ -324,7 +327,8 @@ read.Tetrasat <- function(infile){
     samindex<-samindex[!samindex %in% popindex]
     # set up the genambig object
     object<-new("genambig", samples=1:length(samindex) ,loci=loci)
-    Ploidies(object) <- rep(4, length(samindex))
+    object <- reformatPloidies(object, output="one", erase=TRUE)
+    Ploidies(object) <- 4
     Description(object) <- rawdata[1]
 
     #Extract the data out of the lines
@@ -389,9 +393,10 @@ read.ATetra<-function(infile){
     }
     #set up the object to contain genotypes
     object <- new("genambig", samples=samples, loci=loci)
+    object <- reformatPloidies(object, output="one", erase=TRUE)
     PopInfo(object) <- popdata
     PopNames(object) <- popnames
-    Ploidies(object) <- rep(4, length(samples))
+    Ploidies(object) <- 4
     Description(object) <- description
 
     #fill the array of genotypes
@@ -453,7 +458,7 @@ read.POPDIST <- function(infiles){
         genotypestring <- strsplit(rawdata[samindex[i]],"\t,")[[1]][2]
         thesegenotypes <- strsplit(genotypestring,split="[[:blank:]]")[[1]]
         thesegenotypes <- thesegenotypes[thesegenotypes != ""]
-        Ploidies(object)[i] <- nchar(thesegenotypes[1])/2
+        Ploidies(object)[i,] <- nchar(thesegenotypes)/2
 
         for(j in 1:length(loci)){
             thesealleles <- substring(thesegenotypes[j],
@@ -466,6 +471,42 @@ read.POPDIST <- function(infiles){
             }
         }
     }
+    object <- reformatPloidies(object, output="collapse")
 
     return(object)
+}
+
+read.STRand <- function(file, sep="\t", popInSam=TRUE){
+  # read the spreadsheet into a table
+  mydata <- read.table(file, header=TRUE, sep=sep, stringsAsFactors=FALSE)
+
+  if(!"Pop" %in% names(mydata))
+    stop("Need Pop column")
+  if(!"Ind" %in% names(mydata))
+    stop("Need Ind column")
+  if(popInSam){
+    samples <- paste(mydata$Pop, mydata$Ind, sep="")
+  } else {
+    samples <- mydata$Ind
+  }
+  loci <- names(mydata)[!names(mydata) %in% c("Pop", "Ind")]
+  genobject <- new("genambig", samples=samples, loci=loci)
+  PopNames(genobject) <- unique(mydata$Pop)
+  PopInfo(genobject) <- PopNum(genobject, mydata$Pop)
+
+  # fill in the genotypes
+  for(L in loci){
+    for(s in 1:length(samples)){
+      thisgen <- strsplit(mydata[s,L], split="*", fixed=TRUE)[[1]]
+      thisgen <- unique(as.integer(strsplit(thisgen, split="/")[[1]]))
+      if(thisgen[1]==0){
+        Genotype(genobject, s, L) <- Missing(genobject)
+      } else {
+        Genotype(genobject, s, L) <- thisgen
+      }
+    }
+  }
+
+  # return the dataset
+  return(genobject)
 }

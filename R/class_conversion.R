@@ -1,24 +1,49 @@
+# Function to find unique alleles at a locus
+.unal1loc <- function(object, samples, locus){
+  if(!is(object, "genambig"))
+    stop("Object must be of class genambig")
+  if(missing(samples)) samples <- Samples(object)
+  if(missing(locus)) stop("locus argument needed.")
+  
+  al <- sort(unique(stack(object@Genotypes[samples,locus])$values))
+  al <- al[al != Missing(object)]
+  return(al)
+}
+
 genambig.to.genbinary <- function(object, samples=Samples(object), loci=Loci(object)){
     # set up the object that will ultimately be returned
     objectN <- new("genbinary", samples, loci)
 
     # fill in the slots that will be identical
     PopNames(objectN) <- PopNames(object)
-    PopInfo(objectN) <- PopInfo(object)[samples]
-    Ploidies(objectN) <- Ploidies(object)[samples]
+    if(!all(is.na(PopInfo(object)[samples]))){
+      PopInfo(objectN) <- PopInfo(object)[samples]
+    }
     Usatnts(objectN) <- Usatnts(object)[loci]
     Description(objectN) <- Description(object)
+    if(is(object@Ploidies, "ploidyone")){
+      objectN@Ploidies <- object@Ploidies
+    }
+    if(is(object@Ploidies, "ploidysample")){
+      objectN@Ploidies <- new("ploidysample", samples=samples)
+      Ploidies(objectN) <- Ploidies(object)[samples]
+    }
+    if(is(object@Ploidies, "ploidylocus")){
+      objectN@Ploidies <- new("ploidylocus", loci=loci)
+      Ploidies(objectN) <- Ploidies(object)[loci]
+    }
+    if(is(object@Ploidies, "ploidymatrix")){
+      Ploidies(objectN) <- Ploidies(object)[samples, loci]
+    }
 
     # find all unique alleles for each locus
     locvector<-c()
     allelevector<-c()
     for(L in loci){
-        thesealleles <- c()
-        for(s in samples){
-            if(!isMissing(object, s, L)) thesealleles <-
-                c(thesealleles, Genotype(object, s, L))
-        }
-        thesealleles<-sort(unique(thesealleles))
+      # skip if there are no genotypes
+      if(all(isMissing(object, samples, L))) next
+      # find the alleles
+        thesealleles <- .unal1loc(object, samples, L)
         locvector <- c(locvector, rep(L, length(thesealleles)))
         allelevector <- c(allelevector, thesealleles)
     }
@@ -57,10 +82,25 @@ genbinary.to.genambig <- function(object, samples = Samples(object),
 
     # fill in the slots that will be identical
     PopNames(objectN) <- PopNames(object)
-    PopInfo(objectN) <- PopInfo(object)[samples]
-    Ploidies(objectN) <- Ploidies(object)[samples]
+    if(!all(is.na(PopInfo(object)[samples]))){
+      PopInfo(objectN) <- PopInfo(object)[samples]
+    }
     Usatnts(objectN) <- Usatnts(object)[loci]
     Description(objectN) <- Description(object)
+    if(is(object@Ploidies, "ploidyone")){
+      objectN@Ploidies <- object@Ploidies
+    }
+    if(is(object@Ploidies, "ploidysample")){
+      objectN@Ploidies <- new("ploidysample", samples=samples)
+      Ploidies(objectN) <- Ploidies(object)[samples]
+    }
+    if(is(object@Ploidies, "ploidylocus")){
+      objectN@Ploidies <- new("ploidylocus", loci=loci)
+      Ploidies(objectN) <- Ploidies(object)[loci]
+    }
+    if(is(object@Ploidies, "ploidymatrix")){
+      Ploidies(objectN) <- Ploidies(object)[samples, loci]
+    }
 
     # Go through matrix one locus at a time to get genotypes
     for(L in loci){

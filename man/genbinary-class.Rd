@@ -178,17 +178,11 @@ specified samples from the genotypes matrix, then calls the method for
   \code{\link{merge,genbinary,genbinary-method}}.}
 	 }
 }
-\references{
-%%  ~~put references to the literature/web site here~~
-}
+
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\linkS4class{gendata}}, \code{\link[=Samples]{Accessors}},

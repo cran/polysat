@@ -43,8 +43,10 @@ is taken from the comment line of the first file.  Locus names are taken
 from the files, and samples are given numbers instead of names.  Each
 genotype consists of all unique non-zero integers for a given sample and
 locus.  The \code{Ploidies} slot is filled in based on how many alleles
-are present for the first locus of each sample (the number of characters
-for the genotype, divided by two).  Population names are taken from the
+are present at each locus of each sample (the number of characters
+for the genotype, divided by two).  \code{\link{reformatPloidies}} is
+used internally by the function to collapse the ploidies to the simplest
+format.  Population names are taken from the
 individual genotype lines, and population identities are recorded based
 on how the individuals are delimited by \dQuote{Pop} lines.
 }
@@ -63,17 +65,12 @@ measures.  \emph{Journal of Heredity} \bold{91}, 178-179.
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{write.POPDIST}}, \code{\link{read.Tetrasat}},
 \code{\link{read.ATetra}}, \code{\link{read.Structure}},
 \code{\link{read.SPAGeDi}}, \code{\link{read.GeneMapper}},
-\code{\link{read.GenoDive}}
+\code{\link{read.GenoDive}}, \code{\link{read.STRand}}
 }
 \examples{
 # Create a file to read (this is typically done in a text editor)

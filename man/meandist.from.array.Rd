@@ -57,17 +57,9 @@ named by samples, of distances averaged across loci.
 frames with three columns: Locus, Sample1, and Sample2.  Each row
 represents the index in the array of an element containing NA.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{meandistance.matrix}}, \code{\link{Bruvo.distance}},

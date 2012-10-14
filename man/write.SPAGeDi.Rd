@@ -70,7 +70,8 @@ alleles at a locus in order to get the alleles down to the right number
 of digits.
 
 If a genotype has fewer alleles than the \code{Ploidies} value for
-that sample, zeros are added up to the ploidy.  If the genotype has more
+that sample and locus, zeros are added up to the ploidy.  If the
+genotype has more
 alleles than the ploidy, a random subset of alleles is used and a
 warning is printed.  If the genotype has only one allele (is fully
 heterozygous), then that allele is replicated to the ploidy of the
@@ -87,16 +88,11 @@ A file is written but no value is returned.
 
   Hardy, O. J. and Vekemans, X. (2002) SPAGeDi: a versatile computer
   program to analyse spatial genetic structure at the individual or
-  population levels.  \emph{Molecular Ecology Notes} \bold{2}, 618-620.
+  population levels.  \emph{Molecular Ecology Notes} \bold{2}, 618--620.
 }
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
   \code{\link{read.SPAGeDi}}, \code{\link{write.freq.SPAGeDi}},
@@ -109,6 +105,7 @@ Lindsay V. Clark
 # set up data to write (usually read from a file)
 mygendata <- new("genambig", samples = c("ind1","ind2","ind3","ind4"),
                  loci = c("loc1", "loc2"))
+mygendata <- reformatPloidies(mygendata, output="sample")
 Genotypes(mygendata, samples="ind1") <- list(c(102,106,108),c(207,210))
 Genotypes(mygendata, samples="ind2") <- list(c(104),c(204,210))
 Genotypes(mygendata, samples="ind3") <- list(c(100,102,108),c(201,213))

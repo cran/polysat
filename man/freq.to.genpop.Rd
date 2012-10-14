@@ -32,7 +32,10 @@ An optional character vector indicating the names of loci to use.
 }
 }
 \details{
-%%  ~~ If necessary, more details than the description above ~~
+  \pkg{adegenet} expects one ploidy for the entire dataset.  Therefore, data
+  frames of allele frequencies with multiple \dQuote{Genomes} columns,
+  such as those produced when ploidy varies by locus, are not allowed as
+  the \code{freqs} argument.
 }
 \value{
 A data frame with row and column names identical to those in
@@ -48,15 +51,11 @@ of genetic markers.  \emph{Bioinformatics} \bold{24}, 1403-1405.
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{simpleFreq}}, \code{\link{deSilvaFreq}},
-\code{\link{write.freq.SPAGeDi}}
+\code{\link{write.freq.SPAGeDi}}, \code{\link{gendata.to.genind}}
 }
 \examples{
 # create a simple allele frequency table

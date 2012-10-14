@@ -37,6 +37,14 @@ calculation of mean and maximum allele number.
 \code{estimatePloidy} is a generic function with methods written for
 the \code{genambig} and \code{genbinary} classes.
 
+If the \code{Ploidies} slot of \code{object} is not already a
+\code{"ploidysample"} object, the function will first convert the
+\code{Ploidies} slot to this format, deleting any data that is currently
+there.  (Ploidies must be indexed by sample and not by locus.)  If
+ploidies were already in the \code{"ploidysample"} format, any ploidy
+data already in the object is retained and put into the table (see
+below).
+
 Population identities are displayed in the table only if more than one
 population identity is found in the dataset.  Likewise, the current
 ploidies of the dataset are only displayed if there is more than one
@@ -54,17 +62,11 @@ alleles per locus for each sample.
 \code{object} is returned, with \code{Ploidies(object)} now equal to the
 values set in the \code{new.ploidy} column of the data editor.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
+
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\linkS4class{genambig}}, \code{\linkS4class{genbinary}},

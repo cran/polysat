@@ -63,17 +63,13 @@ A \code{genambig} object containing the data from the file.
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{read.GeneMapper}}, \code{\link{write.GenoDive}},
 \code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
 \code{\link{read.Structure}},
-\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}}
+\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}},
+\code{\link{read.STRand}}
 }
 \examples{
 # create data file (normally done in a text editor or spreadsheet software)

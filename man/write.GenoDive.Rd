@@ -69,11 +69,6 @@ A file is written but no value is returned.
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{read.GenoDive}}, \code{\link{write.Structure}},
@@ -87,6 +82,7 @@ mysamples <- c("Mal", "Inara", "Kaylee", "Simon", "River", "Zoe",
                "Wash", "Jayne", "Book")
 myloci <- c("loc1", "loc2")
 mygendata <- new("genambig", samples=mysamples, loci=myloci)
+mygendata <- reformatPloidies(mygendata, output="sample")
 Genotypes(mygendata, loci="loc1") <- list(c(304,306), c(302,310),
                                           c(306), c(312,314),
     c(312,314), c(308,310), c(312), c(302,308,310), c(-9))

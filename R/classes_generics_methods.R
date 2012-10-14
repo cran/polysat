@@ -1,22 +1,249 @@
-#.initPolysat <- function(where){
+## load library just to make things work properly for now
+#library(polysat)
+
+## Set classes for containing ploidies
+setClass("ploidysuper", contains="VIRTUAL")
+setClass("ploidymatrix", representation(pld="matrix"), contains="ploidysuper",
+         validity=function(object){
+           failures <- character(0)
+
+           if(is.null(dimnames(object@pld)[[1]]))
+             failures <- c(failures, "Sample names missing.")
+           if(is.null(dimnames(object@pld)[[2]]))
+             failrues <- c(failures, "Locus names misisng.")
+
+           if(length(failures)==0){
+             return(TRUE)
+           } else {
+             return(failures)
+           }
+           })
+setClass("ploidysample", representation(pld="integer"), contains="ploidysuper",
+         validity=function(object){
+           failures <- character(0)
+
+           if(is.null(names(object@pld)))
+              failures <- c(failures, "Sample names missing.")
+
+           if(length(failures==0)){
+             return(TRUE)
+           } else {
+             return(failures)
+           }
+           })
+setClass("ploidylocus", representation(pld="integer"), contains="ploidysuper",
+         validity=function(object){
+           failures <- character(0)
+
+           if(is.null(names(object@pld)))
+             failures <- c(failures, "Locus names missing.")
+
+           if(length(failures==0)){
+             return(TRUE)
+           } else {
+             return(failures)
+           }
+           })
+setClass("ploidyone", representation(pld="integer"), contains="ploidysuper",
+         validity=function(object){
+           failures <- character(0)
+
+           if(!is.null(names(object@pld)))
+             failures <- c(failures, "Ploidy vector should not be named.")
+           if(length(object@pld)!=1)
+             failures <- c(failures, "Ploidy vector should have length 1.")
+
+           if(length(failures==0)){
+             return(TRUE)
+           } else {
+             return(failures)
+           }
+         })
+setMethod("initialize", signature(.Object="ploidymatrix"),
+          function(.Object, samples, loci, ...){
+            .Object@pld <- matrix(as.integer(NA), nrow=length(samples),
+                                 ncol=length(loci), dimnames=list(samples, loci))
+            callNextMethod(.Object, ...)})
+setMethod("initialize", signature(.Object="ploidysample"),
+          function(.Object, samples, loci, ...){
+            ploidies <- as.integer(rep(NA, length(samples)))
+            names(ploidies) <- samples
+            .Object@pld <- ploidies
+            callNextMethod(.Object, ...)})
+setMethod("initialize", signature(.Object="ploidylocus"),
+          function(.Object, samples, loci, ...){
+            ploidies <- as.integer(rep(NA, length(loci)))
+            names(ploidies) <- loci
+            .Object@pld <- ploidies
+            callNextMethod(.Object, ...)})
+setMethod("initialize", signature(.Object="ploidyone"),
+          function(.Object, samples, loci, ...){
+            .Object@pld <- as.integer(NA)
+            callNextMethod(.Object, ...)})
+# generics to get and replace ploidies
+setGeneric("pld", function(object, samples, loci) standardGeneric("pld"))
+setGeneric("pld<-", function(object, value) standardGeneric("pld<-"))
+# methods to get and replace ploidies
+setMethod("pld", signature(object = "ploidyone"),
+          function(object,samples,loci) return(object@pld))
+setMethod("pld", signature(object = "ploidymatrix"),
+          function(object,samples,loci){
+            if(missing(samples)) samples <- dimnames(object@pld)[[1]]
+            if(missing(loci)) loci <- dimnames(object@pld)[[2]]
+            return(object@pld[samples,loci])
+          })
+setMethod("pld", signature(object = "ploidysample"),
+          function(object,samples,loci){
+            if(missing(samples)) samples <- names(object@pld)
+            return(object@pld[samples])
+          })
+setMethod("pld", signature(object = "ploidylocus"),
+          function(object,samples,loci){
+            if(missing(loci)) loci <- names(object@pld)
+            return(object@pld[loci])
+          })
+setReplaceMethod("pld", "ploidyone", function(object, value){
+  if(length(value) > 1) stop("Only one ploidy allowed for this format.")
+  object@pld <- unname(as.integer(value))
+  object
+})
+setReplaceMethod("pld", "ploidymatrix", function(object, value){
+  dn <- dimnames(object@pld)
+  object@pld[dn[[1]],dn[[2]]] <- as.integer(value)
+  object
+})
+setReplaceMethod("pld", "ploidysample", function(object, value){
+  object@pld[names(object@pld)] <- as.integer(value)
+  object
+})
+setReplaceMethod("pld", "ploidylocus", function(object, value){
+  object@pld[names(object@pld)] <- as.integer(value)
+  object
+})
+# generic and methods to test collapsibility of ploidies
+setGeneric("plCollapse",
+           function(object, na.rm, returnvalue) standardGeneric("plCollapse"))
+setMethod("plCollapse", signature(object="ploidymatrix", na.rm="logical",
+                                  returnvalue="logical"),
+          function(object, na.rm, returnvalue){
+            if(na.rm){
+              removeNA <- function(x) return(x[!is.na(x)]) # pulls NA out of vectors
+            }
+            done <- FALSE # has it been collapsed yet?
+            # test to see if there is one ploidy for the whole set
+            u <- unique(as.vector(pld(object)))
+            if(na.rm) u <- removeNA(u)
+            if(length(u)==1){
+              done <- TRUE
+              if(returnvalue){
+                result <- new("ploidyone")
+                pld(result) <- u
+                return(result)
+              } else {
+                return(TRUE)
+              }
+            }
+            if(!done){
+              # test to see if there is one ploidy per sample
+              u <- sapply(data.frame(t(pld(object))), unique, simplify=FALSE)
+              if(na.rm) u <- sapply(u, removeNA, simplify=FALSE)
+              if(all(sapply(u, length, simplify=TRUE)==1)){
+                done <- TRUE
+                if(returnvalue){
+                  result <- new("ploidysample", samples=dimnames(pld(object))[[1]])
+                  pld(result) <- unlist(u)
+                  return(result)
+                } else {
+                  return(TRUE)
+                }
+              }
+            }
+            if(!done){
+              # test to see if there is one ploidy per locus
+              u <- sapply(data.frame(pld(object)), unique, simplify=FALSE)
+              if(na.rm) u <- sapply(u, removeNA, simplify=FALSE)
+              if(all(sapply(u, length, simplify=TRUE)==1)){
+                done <- TRUE
+                if(returnvalue){
+                  result <- new("ploidylocus", loci=dimnames(pld(object))[[2]])
+                  pld(result) <- unlist(u)
+                  return(result)
+                } else {
+                  return(TRUE)
+                }
+              }
+            }
+            if(!done) return(FALSE) # cannot be collapsed
+          })
+setMethod("plCollapse", signature(object="ploidysample", na.rm="logical",
+                                  returnvalue="logical"),
+          function(object, na.rm, returnvalue){
+            u <- unique(pld(object))
+            if(na.rm) u <- u[!is.na(u)]
+            if(length(u) != 1){
+              return(FALSE)
+            } else {
+              if(returnvalue){
+                result <- new("ploidyone")
+                pld(result) <- u
+                return(result)
+              } else {
+                return(TRUE)
+              }
+            }
+          })
+setMethod("plCollapse", signature(object="ploidylocus", na.rm="logical",
+                                  returnvalue="logical"),
+          function(object, na.rm, returnvalue){
+            u <- unique(pld(object))
+            if(na.rm) u <- u[!is.na(u)]
+            if(length(u) != 1){
+              return(FALSE)
+            } else {
+              if(returnvalue){
+                result <- new("ploidyone")
+                pld(result) <- u
+                return(result)
+              } else {
+                return(TRUE)
+              }
+            }
+          })
+
 ##                                 gendata Class                             ##
 ## Contains info about missing data symbol, microsat repeats, sample ploidy, ##
 ## and populations.                                                          ##
 ## Is a superclass for other classes containing genotype data.               ##
 setClass("gendata", representation(Description="character", Missing="ANY",
-                                   Usatnts="integer", Ploidies="integer",
+                                   Usatnts="integer", Ploidies="ploidysuper",
                                    PopInfo="integer", PopNames="character"),
-         # make a virtual class?  (include "VIRTUAL" in representation)
+         # make a virtual class?  (include "VIRTUAL" in contains)
          prototype(Description="Insert dataset description here.",
                    Missing=as.integer(-9)),
-#         where=where,
          validity=function(object){
              failures <- character(0)
-             # check to see that sample names match in Ploidies and PopInfo
-             if(!identical(names(object@Ploidies),names(object@PopInfo)))
+             # check size and names of Ploidies with Usatnts and PopInfo
+             if(is(object@Ploidies, "ploidymatrix")){
+               np <- dimnames(pld(object@Ploidies))
+               if(!identical(np[[1]],names(object@PopInfo)))
                  failures <- c(failures,
-                               "Sample Names are not the same in Ploidies and PopInfo."
-                               )
+                               "Sample names inconsistent between Plodies and PopInfo")
+               if(!identical(np[[2]],names(object@Usatnts)))
+                 failures <- c(failures,
+                               "Locus names inconsistent between Ploidies and Usatnts")
+             }
+             if(is(object@Ploidies,"ploidysample")){
+               np <- names(pld(object@Ploidies))
+               if(!identical(np, names(object@PopInfo)))
+                 failures <- c(failures,
+                        "Names of Ploidies do not match names of PopInfo.")
+             }
+             if(is(object@Ploidies,"ploidylocus")){
+               np <- names(pld(object@Ploidies))
+               if(!identical(np, names(object@Usatnts)))
+                 failures <- c(failures,
+                               "Names of Ploidies do not match names of Usatnts")
+             }
 
              # check to see that Missing only has one element
              if(length(object@Missing) != 1) failures <- c(failures,
@@ -44,7 +271,6 @@ setClass("gendata", representation(Description="character", Missing="ANY",
 ## Contains two-dimensional list of vectors to contain genotypes where            ##
 ## allele copy number is not necessarily known.                                   ##
 setClass("genambig", representation(Genotypes="array"), contains="gendata",
-#         where=where,
           validity = function(object){
     failures <- character(0)
 
@@ -55,17 +281,35 @@ setClass("genambig", representation(Genotypes="array"), contains="gendata",
     # include a check to see that all list elements are vectors?
 
     # check to see that sample names match in Genotypes, Ploidies, PopInfo
-    if(!identical(dimnames(object@Genotypes)[[1]],names(object@Ploidies)))
+    ng <- dimnames(object@Genotypes)
+    if(is(object@Ploidies,"ploidymatrix")){
+      np <- dimnames(pld(object@Ploidies))
+      if(!identical(np[[1]],ng[[1]]))
         failures <- c(failures,
-                      "Sample names are not the same in Genotypes and Ploidies."
-                      )
-    if(!identical(dimnames(object@Genotypes)[[1]], names(object@PopInfo)))
+                      "Sample names inconsistent between Plodies and Genotypes")
+      if(!identical(np[[2]],ng[[2]]))
+        failures <- c(failures,
+                      "Locus names inconsistent between Ploidies and Genotypes")
+    }
+    if(is(object@Ploidies,"ploidysample")){
+      np <- names(pld(object@Ploidies))
+      if(!identical(np, ng[[1]]))
+        failures <- c(failures,
+               "Names of Ploidies do not match Sample names in Genotypes")
+    }
+    if(is(object@Ploidies,"ploidylocus")){
+      np <- names(pld(object@Ploidies))
+      if(!identical(np, ng[[2]]))
+        failures <- c(failures,
+               "Names of Ploidies do not match Locus names in Genotypes")
+    }
+    if(!identical(ng[[1]], names(object@PopInfo)))
         failures <- c(failures,
                       "Sample names are not the same in Genotypes and PopInfo."
                       )
 
     # check to see that locus names match in Genotypes, Usatnts
-    if(!identical(dimnames(object@Genotypes)[[2]], names(object@Usatnts)))
+    if(!identical(ng[[2]], names(object@Usatnts)))
         failures <- c(failures,
                       "Locus names are not the same in Genotypes and Usatnts."
                       )
@@ -123,7 +367,7 @@ setGeneric("Samples", function(object, populations, ploidies)
 # generic to replace sample names
 setGeneric("Samples<-", function(object, value) standardGeneric("Samples<-"))
 # generic to get locus names
-setGeneric("Loci", function(object, usatnts) standardGeneric("Loci"))
+setGeneric("Loci", function(object, usatnts, ploidies) standardGeneric("Loci"))
 # generic to replace locus names
 setGeneric("Loci<-", function(object, value) standardGeneric("Loci<-"))
 # generics to get and replace population identities
@@ -133,7 +377,7 @@ setGeneric("PopInfo<-", function(object, value) standardGeneric("PopInfo<-"))
 setGeneric("PopNames", function(object) standardGeneric("PopNames"))
 setGeneric("PopNames<-", function(object, value) standardGeneric("PopNames<-"))
 # generics to get and replace ploidies
-setGeneric("Ploidies", function(object) standardGeneric("Ploidies"))
+setGeneric("Ploidies", function(object, samples, loci) standardGeneric("Ploidies"))
 setGeneric("Ploidies<-", function(object, value) standardGeneric("Ploidies<-"))
 # generics to get and replace usatnts
 setGeneric("Usatnts", function(object) standardGeneric("Usatnts"))
@@ -199,10 +443,8 @@ setMethod("initialize",
         names(usatnts) <- loci
         .Object@Usatnts <- usatnts
 
-        # make a vector to contain ploidy
-        ploidies <- as.integer(rep(NA, length(samples)))
-        names(ploidies) <- samples
-        .Object@Ploidies <- ploidies
+        # make a matrix to contain ploidy
+        .Object@Ploidies <- new("ploidymatrix",samples=samples,loci=loci)
 
         # make a vector to contain population identity
         popinfo <- as.integer(rep(NA, length(samples)))
@@ -222,7 +464,7 @@ setMethod("initialize",
 # All samples if only gendata object is given
 setMethod("Samples", signature(object = "gendata", populations = "missing",
                                ploidies = "missing"),
-          function(object){return(names(object@Ploidies))})
+          function(object){return(names(object@PopInfo))})
 # Just for a subset of population names
 setMethod("Samples", signature(object = "gendata", populations = "character",
                                ploidies = "missing"),
@@ -232,12 +474,14 @@ setMethod("Samples", signature(object = "gendata", populations = "character",
               })
 # Population names and ploidies
 setMethod("Samples", signature(object = "gendata", populations = "character",
-                               ploidies = "numeric"),
+                               ploidies = "numeric"),     
           function(object, populations, ploidies){
+            if(!is(object@Ploidies,"ploidysample"))
+        stop("Ploidies argument only valid if ploidies in dataset are indexed by sample.")
               ploidies <- as.integer(ploidies)
               pops <- match(populations, object@PopNames)
               popsam <- names(object@PopInfo)[object@PopInfo %in% pops]
-              ploisam <- names(object@Ploidies)[object@Ploidies %in% ploidies]
+              ploisam <- names(pld(object@Ploidies))[pld(object@Ploidies) %in% ploidies]
               return(popsam[popsam %in% ploisam])
               })
 # Just a subset of population numbers
@@ -251,44 +495,85 @@ setMethod("Samples", signature(object = "gendata", populations = "numeric",
 setMethod("Samples", signature(object = "gendata", populations = "numeric",
                                ploidies = "numeric"),
           function(object, populations, ploidies){
+            if(!is(object@Ploidies,"ploidysample"))
+        stop("Ploidies argument only valid if ploidies in dataset are indexed by sample.")
+            
               ploidies <- as.integer(ploidies)
               populations <- as.integer(populations)
               popsam <- names(object@PopInfo)[object@PopInfo %in% populations]
-              ploisam <- names(object@Ploidies)[object@Ploidies %in% ploidies]
+              ploisam <- names(pld(object@Ploidies))[pld(object@Ploidies) %in% ploidies]
               return(popsam[popsam %in% ploisam])
               })
 # Just ploidies
 setMethod("Samples", signature(object = "gendata", populations = "missing",
                                ploidies = "numeric"),
           function(object, ploidies){
-              ploidies <- as.integer(ploidies)
-              return(names(object@Ploidies)[object@Ploidies %in% ploidies])
+            if(!is(object@Ploidies,"ploidysample"))
+        stop("Ploidies argument only valid if ploidies in dataset are indexed by sample.")
+            
+            ploidies <- as.integer(ploidies)
+            return(names(pld(object@Ploidies))[pld(object@Ploidies) %in% ploidies])
               })
 
 ##                     Replacement method for sample names                   ##
 setReplaceMethod("Samples", "gendata", function(object, value){
-    names(object@PopInfo) <- value
-    names(object@Ploidies) <- value
-    object
+  if(is(object@Ploidies,"ploidysample"))
+    names(object@Ploidies@pld) <- value
+  if(is(object@Ploidies,"ploidymatrix"))
+    dimnames(object@Ploidies@pld)[[1]] <- value
+  names(object@PopInfo) <- value  
+  object
 })
 
 ## Methods to get locus names.
 # Return all locus names
-setMethod("Loci", signature(object = "gendata", usatnts = "missing"),
+setMethod("Loci", signature(object = "gendata", usatnts = "missing", ploidies="missing"),
           function(object){
               return(names(object@Usatnts))
               })
 # Return locus names for a certain subset of repeat types
-setMethod("Loci", signature(object = "gendata", usatnts = "numeric"),
+setMethod("Loci", signature(object = "gendata", usatnts = "numeric", ploidies="missing"),
           function(object, usatnts){
               usatnts <- as.integer(usatnts)
               return(names(object@Usatnts)[object@Usatnts %in% usatnts])
           })
+# Return locus names for a certain subset of ploidies
+setMethod("Loci", signature(object = "gendata", usatnts = "missing", ploidies="numeric"),
+          function(object, ploidies){
+            if(!is(object@Ploidies,"ploidylocus"))
+          stop("Ploidies argument only valid if ploidies in dataset are indexed by locus")
+
+            ploidies <- as.integer(ploidies)
+            loci <- names(pld(object@Ploidies))[pld(object@Ploidies) %in% ploidies]
+
+            return(loci)
+          })
+# Return locus names for a subset of ploidies and repeat types
+setMethod("Loci", signature(object = "gendata", usatnts = "numeric", ploidies="numeric"),
+          function(object, usatnts, ploidies){
+            if(!is(object@Ploidies,"ploidylocus"))
+          stop("Ploidies argument only valid if ploidies in dataset are indexed by locus")
+
+            ploidies <- as.integer(ploidies)
+            ploci <- names(pld(object@Ploidies))[pld(object@Ploidies) %in% ploidies]
+
+            usatnts <- as.integer(usatnts)
+            uloci <- names(object@Usatnts)[object@Usatnts %in% usatnts]
+
+            return(uloci[uloci %in% ploci])
+          })
 
 ## Replacement method for locus names
 setReplaceMethod("Loci", "gendata", function(object, value){
-    names(object@Usatnts) <- value
-    object
+  # Replace Ploidies names if necessary
+  if(is(object@Ploidies,"ploidylocus"))
+    names(object@Ploidies@pld) <- value
+  if(is(object@Ploidies,"ploidymatrix"))
+    dimnames(object@Ploidies@pld)[[2]] <- value
+
+  # Replace Usatnts names
+  names(object@Usatnts) <- value
+  object
 })
 
 ## Methods to get and replace population identities
@@ -316,12 +601,112 @@ setReplaceMethod("PopNames", "gendata", function(object, value){
 })
 
 ## Methods to get and replace ploidies
-setMethod("Ploidies", signature(object = "gendata"),
-          function(object) return(object@Ploidies))
+setMethod("Ploidies", signature(object = "gendata", samples="ANY", loci="ANY"),
+          function(object, samples, loci){
+            return(pld(object@Ploidies, samples=samples, loci=loci))
+            })
 setReplaceMethod("Ploidies", "gendata", function(object, value){
-    object@Ploidies[names(object@Ploidies)] <- as.integer(value)
+    pld(object@Ploidies) <- value
     object
 })
+# Function to change the ploidy format between the four types
+reformatPloidies <- function(object, output="collapse", na.rm=FALSE,
+                             erase=FALSE){
+  
+  if(!output %in% c("matrix", "sample", "locus", "one", "collapse"))
+    stop("Unrecognized output argument.  See reformatPloidies documentation.")
+
+  if(erase){ # just make a new ploidies object filled with NA
+    if(output=="collapse") output <- "one"
+    object@Ploidies <- new(paste("ploidy",output,sep=""),
+                           samples=Samples(object),
+                           loci=Loci(object))
+  } else {
+
+    ## If you start with ploidymatrix - collapse or do nothing
+  if(is(object@Ploidies,"ploidymatrix") && output %in% c("sample","locus","one",
+                                                         "collapse")){
+    pl <- plCollapse(object@Ploidies, na.rm=na.rm, returnvalue=TRUE)
+    if(is(pl, "ploidysuper")){ # if the ploidy was collapsible
+      if(output=="collapse" || is(pl, paste("ploidy",output,sep=""))){
+        # if collapsed ploidy is the right format, we're done
+        object@Ploidies <- pl
+      } else { # if collapsed ploidy is not right format
+        if(is(pl, "ploidyone")){ # expand from ploidyone
+          pl2 <- new(paste("ploidy",output,sep=""),
+                     samples=Samples(object),
+                     loci=Loci(object))
+          pld(pl2) <- pld(pl) 
+          object@Ploidies <- pl2
+        } else {
+          stop("Ploidies not collapsible to desired format.")
+        }
+      }
+    } else { # if ploidy was not collapsible at all
+      if(output != "collapse") stop("Ploidies not collapsible to desired format.")
+    }
+  }
+
+  # if you start with ploidysample and want to collapse
+  if(is(object@Ploidies,"ploidysample") && output %in% c("one","collapse","locus")){
+    pl <- plCollapse(object@Ploidies, na.rm=na.rm, returnvalue=TRUE)
+    if(is(pl, "ploidyone")){ # if it is collapsible
+      if(output %in% c("collapse","one")){
+        object@Ploidies <- pl
+      }
+      if(output=="locus"){
+        pl2 <- new("ploidylocus", loci=Loci(object))
+        pld(pl2) <- pld(pl)
+        object@Ploidies <- pl2
+      }
+    } else { # if it is not collapsible
+      if(output != "collapse") stop("Ploidies not collapsible to desired format.")
+    }
+  }
+
+  # if you start with ploidysample and want to expand
+  if(is(object@Ploidies,"ploidysample") && output=="matrix"){
+    pl <- new("ploidymatrix", samples=Samples(object), loci=Loci(object))
+    pld(pl) <- pld(object@Ploidies)
+    object@Ploidies <- pl
+  }
+
+  # if you start with ploidylocus and want to collapse
+  if(is(object@Ploidies,"ploidylocus") && output %in% c("sample","one","collapse")){
+    pl <- plCollapse(object@Ploidies, na.rm=na.rm, returnvalue=TRUE)
+    if(is(pl, "ploidyone")){ # if it is collapsible
+      if(output %in% c("collapse","one")){
+        object@Ploidies <- pl
+      }
+      if(output=="sample"){
+        pl2 <- new("ploidysample", samples=Samples(object))
+        pld(pl2) <- pld(pl)
+        object@Ploidies <- pl2
+      }
+    } else { # if it is not collapsible
+      if(output != "collapse") stop("Ploidies not collapsible to desired format.")
+    }
+  }
+
+  # if you start with ploidylocus and want to expand
+  if(is(object@Ploidies,"ploidylocus") && output == "matrix"){
+    pl <- new("ploidymatrix", samples=Samples(object), loci=Loci(object))
+    pld(pl) <- rep(pld(object@Ploidies), each=length(Samples(object)))
+    object@Ploidies <- pl
+  }
+
+  # if you start with ploidyone and want to expand
+  if(is(object@Ploidies,"ploidyone") && output %in% c("matrix","sample","locus")){
+    pl <- new(paste("ploidy",output,sep=""),
+                     samples=Samples(object), loci=Loci(object))
+    pld(pl) <- pld(object@Ploidies)
+    object@Ploidies <- pl
+  }
+  }
+
+  return(object)
+}
+
 
 ## Methods to get and replace repeat lengths
 setMethod("Usatnts", signature(object = "gendata"),
@@ -336,7 +721,7 @@ setMethod("summary", "gendata", function(object){
     cat(paste(length(Samples(object)), "samples,", length(Loci(object)), "loci."),
         paste(length(unique(PopInfo(object))), "populations."),
         sep="\n")
-    cat("Ploidies:", unique(Ploidies(object)))
+    cat("Ploidies:", unique(as.vector(Ploidies(object))))
     cat("\n", sep="")
     cat("Length(s) of microsatellite repeats:", unique(Usatnts(object)))
     cat("\n", sep="")
@@ -346,13 +731,24 @@ setMethod("summary", "gendata", function(object){
 setMethod("deleteSamples", "gendata", function(object, samples){
     samtouse <- Samples(object)[!Samples(object) %in% samples]
     object@PopInfo <- object@PopInfo[samtouse]
-    object@Ploidies <- object@Ploidies[samtouse]
+    if(is(object@Ploidies,"ploidysample")){
+      object@Ploidies@pld <- object@Ploidies@pld[samtouse]
+    }
+    if(is(object@Ploidies,"ploidymatrix")){
+      object@Ploidies@pld <- object@Ploidies@pld[samtouse,, drop=FALSE]
+    }
     return(object)
 })
 
 setMethod("deleteLoci", "gendata", function(object, loci){
     loctouse <- Loci(object)[!Loci(object) %in% loci]
     object@Usatnts <- object@Usatnts[loctouse]
+    if(is(object@Ploidies,"ploidylocus")){
+      object@Ploidies@pld <- object@Ploidies@pld[loctouse]
+    }
+    if(is(object@Ploidies,"ploidymatrix")){
+      object@Ploidies@pld <- object@Ploidies@pld[,loctouse, drop=FALSE]
+    }
     return(object)
 })
 
@@ -360,7 +756,15 @@ setMethod("deleteLoci", "gendata", function(object, loci){
 setMethod("[", signature(x="gendata", i="ANY", j="ANY"), function(x, i, j){
     # i is samples, j is loci
     x@PopInfo <- x@PopInfo[i]
-    x@Ploidies <- x@Ploidies[i]
+    if(is(x@Ploidies, "ploidymatrix")){
+      x@Ploidies@pld <- x@Ploidies@pld[i,j, drop=FALSE]
+    }
+    if(is(x@Ploidies, "ploidysample")){
+      x@Ploidies@pld <- x@Ploidies@pld[i]
+    }
+    if(is(x@Ploidies, "ploidylocus")){
+      x@Ploidies@pld <- x@Ploidies@pld[j]
+    }
     x@Usatnts <- x@Usatnts[j]
     return(x)
 })
@@ -405,6 +809,10 @@ setReplaceMethod("PopNum", signature(object="gendata", popname="character"),
 ## Method for merging objects
 setMethod("merge", signature(x="gendata", y="gendata"),
           function(x, y, objectm, samples, loci, overwrite){
+            # error if ploidies are not in the same format
+            if(!identical(class(x@Ploidies),class(y@Ploidies)))
+              stop("x and y must have Ploidies in the same format.")
+            
               # set up new gendata object if this wasn't called from the method
               # of a subclass.
               if(missing(objectm)){
@@ -424,29 +832,56 @@ setMethod("merge", signature(x="gendata", y="gendata"),
                   objectT <- x
               }
 
+            # function definition for merging vectors
+            # B and T are vectors, m is final index (Samples(objectm) or Loci(objectm)), x is output
+            vectmerge <- function(m, B, T, type){
+              x <- rep(NA, length(m)) # set up an empty vector
+              names(x) <- m
+
+              b <- m[m %in% names(B)] # subset indexing vectors
+              t <- m[m %in% names(T)]
+
+              x[b] <- B[b]
+              x[t] <- T[t]
+
+              if(owerror && !identical(x[b], B[b]))
+                stop(paste("Conflicting", type,"data; set overwrite to \"x\" or \"y\"."))
+
+              return(x)
+            }
+
               # merge Usatnts
-              Usatnts(objectm)[Loci(objectm) %in% Loci(objectB)] <-
-                  Usatnts(objectB)[Loci(objectm)[Loci(objectm) %in% Loci(objectB)]]
-              Usatnts(objectm)[Loci(objectm) %in% Loci(objectT)] <-
-                  Usatnts(objectT)[Loci(objectm)[Loci(objectm) %in% Loci(objectT)]]
-              if(owerror && !identical(Usatnts(objectm)[Loci(objectm) %in% Loci(objectB)],
-                      Usatnts(objectB)[Loci(objectm)[Loci(objectm) %in% Loci(objectB)]])){
-                  stop("Conflicting data in Usatnts.  Set overwrite to \"x\" or \"y\".")
-              }
+            Usatnts(objectm) <- vectmerge(Loci(objectm), Usatnts(objectB), Usatnts(objectT), "Usatnts")
 
               # merge Ploidies
-              Ploidies(objectm)[Samples(objectm) %in% Samples(objectB)] <-
-                  Ploidies(objectB)[Samples(objectm)[Samples(objectm) %in%
-                                                     Samples(objectB)]]
-              Ploidies(objectm)[Samples(objectm) %in% Samples(objectT)] <-
-                  Ploidies(objectT)[Samples(objectm)[Samples(objectm) %in%
-                                                     Samples(objectT)]]
-              if(owerror && !identical(Ploidies(objectm)[Samples(objectm)
-                                                         %in% Samples(objectB)],
-                                       Ploidies(objectB)[Samples(objectm)[
-                                            Samples(objectm) %in% Samples(objectB)]])){
-                  stop("Conflicting data in Ploidies.  Set overwrite to \"x\" or \"y\".")
-              }
+            if(is(objectT@Ploidies,"ploidysample")){
+              objectm@Ploidies <- new("ploidysample", samples=Samples(objectm))
+              Ploidies(objectm) <- vectmerge(Samples(objectm), Ploidies(objectB), Ploidies(objectT),
+                                             "Ploidies")
+            }
+            if(is(objectT@Ploidies,"ploidylocus")){
+              objectm@Ploidies <- new("ploidylocus", loci=Loci(objectm))
+              Ploidies(objectm) <- vectmerge(Loci(objectm), Ploidies(objectB), Ploidies(objectT),
+                                             "Ploidies")
+            }
+            if(is(objectT@Ploidies,"ploidyone")){
+              if(owerror && Ploidies(objectB) != Ploidies(objectT))
+                stop("Conflicting Ploidies data. Set overwrite to \"x\" or \"y\".")
+              objectm@Ploidies <- new("ploidyone")
+              Ploidies(objectm) <- Ploidies(objectT)
+            }
+            if(is(objectT@Ploidies,"ploidymatrix")){
+              a <- Samples(objectm)[Samples(objectm) %in% Samples(objectB)]
+              b <- Loci(objectm)[Loci(objectm) %in% Loci(objectB)]
+              c <- Samples(objectm)[Samples(objectm) %in% Samples(objectT)]
+              d <- Loci(objectm)[Loci(objectm) %in% Loci(objectT)]
+
+              Ploidies(objectm)[a,b] <- Ploidies(objectB)[a,b]
+              Ploidies(objectm)[c,d] <- Ploidies(objectT)[c,d]
+
+              if(owerror && !identical(Ploidies(objectm)[a,b], Ploidies(objectB)[a,b]))
+                stop("Conflicting Ploidies data. Set overwrite to \"x\" or \"y\".")
+            }
 
               # take description from "top" object or both
               if(owerror && Description(objectB)[1] != Description(objectT)[1]){
@@ -628,7 +1063,15 @@ setMethod("deleteLoci", "genambig", function(object, loci){
 setMethod("[", signature(x = "genambig", i="ANY", j="ANY"), function(x, i, j){
     x@Genotypes <- x@Genotypes[i,j, drop=FALSE]
     x@PopInfo <- x@PopInfo[i]
-    x@Ploidies <- x@Ploidies[i]
+    if(is(x@Ploidies, "ploidymatrix")){
+      x@Ploidies@pld <- x@Ploidies@pld[i,j, drop=FALSE]
+    }
+    if(is(x@Ploidies, "ploidysample")){
+      x@Ploidies@pld <- x@Ploidies@pld[i]
+    }
+    if(is(x@Ploidies, "ploidylocus")){
+      x@Ploidies@pld <- x@Ploidies@pld[j]
+    }
     x@Usatnts <- x@Usatnts[j]
     return(x)
 })
@@ -648,7 +1091,7 @@ setReplaceMethod("Missing", "genambig", function(object, value){
 setMethod("editGenotypes", "genambig",
           function(object, maxalleles, samples, loci){
               if(is.na(maxalleles))
-                  stop("Use estimatePloidy first or give argument for maxalleles.")
+                  stop("Enter ploidies first or give argument for maxalleles.")
               # take the selected genotypes and convert to a data frame
               dummyarray <- matrix(NA, nrow=length(samples)*length(loci), ncol=maxalleles,
                                    dimnames=list(NULL,
@@ -685,6 +1128,10 @@ setMethod("editGenotypes", "genambig",
 # Generic function and method to estimate ploidy
 setMethod("estimatePloidy", "genambig",
           function(object, extrainfo, samples, loci){
+            # get Ploidies into ploidysample format if necessary
+              if(!is(object@Ploidies, "ploidysample")){
+                object <- reformatPloidies(object, output="sample", erase=TRUE)
+              }
               # set up array to contain the maximum and average number of alleles
               ploidyinfo <- array(dim=c(length(samples),2),
                                   dimnames=list(samples,
@@ -867,7 +1314,7 @@ setMethod("Genotypes", "genbinary", function(object, samples, loci){
     }
 
     # return subset of the matrix
-    return(object@Genotypes[samples, loccolumns])
+    return(object@Genotypes[samples, loccolumns, drop=FALSE])
 })
 setMethod("Genotype", "genbinary", function(object, sample, locus){
     return(Genotypes(object, sample, locus))
@@ -1019,7 +1466,15 @@ setMethod("deleteLoci", "genbinary", function(object, loci){
 setMethod("[", signature(x = "genbinary", i = "ANY", j= "ANY"), function(x, i, j){
     x@Genotypes <- Genotypes(x, i, j)
     x@PopInfo <- x@PopInfo[i]
-    x@Ploidies <- x@Ploidies[i]
+    if(is(x@Ploidies, "ploidymatrix")){
+      x@Ploidies@pld <- x@Ploidies@pld[i,j, drop=FALSE]
+    }
+    if(is(x@Ploidies, "ploidysample")){
+      x@Ploidies@pld <- x@Ploidies@pld[i]
+    }
+    if(is(x@Ploidies, "ploidylocus")){
+      x@Ploidies@pld <- x@Ploidies@pld[j]
+    }
     x@Usatnts <- x@Usatnts[j]
     return(x)
 })
@@ -1027,6 +1482,10 @@ setMethod("[", signature(x = "genbinary", i = "ANY", j= "ANY"), function(x, i, j
 # method for estimating ploidy
 setMethod("estimatePloidy", "genbinary",
           function(object, extrainfo, samples, loci){
+            # get Ploidies into ploidysample format if necessary
+              if(!is(object@Ploidies, "ploidysample")){
+                object <- reformatPloidies(object, output="sample", erase=TRUE)
+              }
               # set up array to contain the maximum and average number of alleles
               ploidyinfo <- array(dim=c(length(samples),2),
                                   dimnames=list(samples,

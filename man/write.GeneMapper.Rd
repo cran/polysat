@@ -31,7 +31,8 @@ of \code{Loci(object)}.
 }
 }
 \details{
-  Although I do not know of any population genetic software that will
+  Although I do not know of any population genetic software other than
+  \pkg{polysat} that will
   read this data format directly, the ABI GeneMapper Genotypes Table
   format is a convenient way for the user to store microsatellite
   genotype data and view it in a text editor or spreadsheet software.
@@ -39,7 +40,7 @@ of \code{Loci(object)}.
   by tabs.
 
   The number of allele columns needed is detected by the maximum value
-  of \code{Ploidies(object)[samples]}.  The function will add additional
+  of \code{Ploidies(object,samples,loci)}.  The function will add additional
   columns if it encounters genotypes with more than this number of
   alleles.
 
@@ -50,12 +51,12 @@ of \code{Loci(object)}.
   use find/replace or conditional formatting to locate missing data.
 
   The file that is produced can be read back into R directly by
-  \code{read.GeneMapper}, and therefore may be a convenient way to backup
+  \code{\link{read.GeneMapper}}, and therefore may be a convenient way to backup
   genotype data for future analysis and manipulation in \pkg{polysat}.
-  (\code{save} can also be used to backup an R object more directly,
+  (\code{\link{save}} can also be used to backup an R object more directly,
   including population and other information.)  This can also enable the
   user to edit genotype data in spreadsheet software, if the
-  \code{editGenotypes} function is not sufficient.
+  \code{\link{editGenotypes}} function is not sufficient.
 
 }
 \value{
@@ -67,11 +68,6 @@ A file is written but no value is returned.
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{read.GeneMapper}}, \code{\link{write.Structure}},
@@ -84,13 +80,14 @@ Lindsay V. Clark
 mysamples <- c("ind1", "ind2", "ind3", "ind4")
 myloci <- c("loc1", "loc2")
 mygendata <- new("genambig", samples=mysamples, loci=myloci)
+mygendata <- reformatPloidies(mygendata, output="one")
 Genotypes(mygendata, loci="loc1") <- list(c(202,204), c(204),
                                           c(200,206,208,212),
                                           c(198,204,208))
 Genotypes(mygendata, loci="loc2") <- list(c(78,81,84),
                                           c(75,90,93,96,99),
                                           c(87), c(-9))
-Ploidies(mygendata) <- c(6,6,6,6)
+Ploidies(mygendata) <- 6
 
 # write a GeneMapper file
 write.GeneMapper(mygendata, "exampleGMoutput.txt")

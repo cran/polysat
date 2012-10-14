@@ -16,7 +16,7 @@ genotypeProbs(object, sample, locus, freq = NULL, gprob = NULL,
 \arguments{
   \item{object}{
 An object of class \code{"genambig"}.  The \code{Ploidies} and
-\code{PopInfo} slots must be filled in for the sample of interest.
+\code{PopInfo} slots must be filled in for the sample and locus of interest.
 }
   \item{sample}{
 Number or character string indicating the sample to evaluate.
@@ -102,11 +102,6 @@ certain patterns of inheritance.  \emph{Heredity} \bold{95}, 327--334
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
   \code{\link{meandistance.matrix2}},

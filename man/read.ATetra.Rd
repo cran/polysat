@@ -7,7 +7,7 @@ Read File in ATetra Format
 Given a file formatted for the software ATetra, \code{read.ATetra}
 produces a \code{genambig} object containing genotypes, population
 identities, population names, and a dataset description from the file.
-All ploidies in the \code{genambig} object are automatically set to
+Ploidy in the \code{genambig} object is automatically set to
 \code{4}.
 }
 \usage{
@@ -32,22 +32,18 @@ A \code{genambig} object as described above.
   van Puyvelde, K., van Geert, A. and Triest, L.  (2010)  ATETRA, a new
   software program to analyze tetraploid microsatellite data: comparison
   with TETRA and TETRASAT.  \emph{Molecular Ecology Resources}
-  \bold{10}, 331-334.
+  \bold{10}, 331--334.
 }
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
   \code{\link{write.ATetra}}, \code{\link{read.Tetrasat}},
   \code{\link{read.GeneMapper}},
 \code{\link{read.Structure}}, \code{\link{read.GenoDive}},
-\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}}
+\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}},
+\code{\link{read.STRand}}
 }
 \examples{
 # create a file to be read

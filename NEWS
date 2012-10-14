@@ -1,3 +1,49 @@
+Changes in version 1.3-1
+
+The internal function .ulal1loc has been added.  This function finds all 
+unique alleles at a single locus.  genambig.to.genbinary has been changed to
+use this function, resulting in about a 3% reduction in processing time.
+
+The function alleleDiversity has been added.  alleleDiversity finds and counts
+unique alleles in a dataset.
+
+The functions read.STRand and gendata.to.genind have been added.
+
+Changes in version 1.3-0
+
+Ploidies can now be indexed by sample, locus, both, or neither.  To accomplish 
+this, the 'Ploidies' slot of a "gendata" object must now be an object
+of the class "ploidysuper", a virtual class which includes four new classes
+called "ploidymatrix", "ploidysample", "ploidylocus", and "ploidyone".  Generic
+functions 'pld', 'pld<-', and 'plCollapse' have been defined with methods for
+these four new classes, in order to access and replace ploidy values and convert 
+ploidy data between classes, respectively.  The 'Ploidies' function now has
+'sample' and 'locus' arguments so that ploidies can be retrieved in the same way
+regardless of how they are stored.  'reformatPloidies' is a new function for use
+on "gendata" objects, to change the class of the 'Ploidies' slot.  The 'Loci' 
+function now has a "ploidies" argument so that loci can be retrieved by ploidy,
+as could be done with samples in previous versions.  Most functions in polysat
+have undergone minor changes in order to utilize the new flexibility in 
+ploidy indexing.
+
+genotypeDiversiy, Simpson, Shannon functions: Calculations are now based on
+counts rather than frequencies, which in the case of the Simpson index, allows
+correction for sample size.
+
+genotypeDiversity: bug fix for cases in which a population only has one sample
+with non-missing data at a given locus.
+
+assignClones: bug fix for cases in which there is just one sample.
+
+'Genotypes' method of "genbinary" class: Bug fixed that would have simplified the 
+genotypes matrix to a vector if a locus had only one allele.  This also
+fixes an issue that came up with 'genbinary.to.genambig'.
+
+'genambig.to.genbinary' and 'genbinary.to.genambig' functions:  Minor bug fix
+to prevent warning messages if nothing has been stored to the 'PopInfo' slot.
+Also, bug fix in 'genambig.to.genbinary' to allow for loci at which all data is 
+missing.
+
 Changes in version 1.2-1
 
 Bruvo2.distance function has been added.  This calculates an alternate version

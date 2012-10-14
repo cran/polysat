@@ -16,9 +16,10 @@ deSilvaFreq(object, self, samples = Samples(object),
 }
 \arguments{
   \item{object}{
-A \code{genambig} or \code{genbinary} object containing the dataset of
-interest.  \code{Ploidies} must be filled in for \code{samples}.  All
-ploidies for \code{samples} should be the same, and this should be an
+    A \code{"\linkS4class{genambig}"} or \code{"\linkS4class{genbinary}"}
+    object containing the dataset of
+interest.  All ploidies for \code{samples} and \code{loci} should be the
+same, and this should be an
 even number.  \code{PopInfo} must also be filled in for \code{samples}.
 }
   \item{self}{
@@ -39,7 +40,8 @@ for the null allele at each locus.
   \item{initFreq}{
 A data frame containing allele frequencies (for non-null loci) to use
 for initialization.  This needs to be in the same format as the output
-of \code{\link{simpleFreq}} (which is similar to the format of the
+of \code{\link{simpleFreq}} with a single \dQuote{Genomes} column
+(similarly to the format of the
 output of \code{deSilvaFreq}).  By default, the function will do a quick
 estimation of allele frequencies using \code{simpleFreq} and then
 initialize the EM algorithm at these frequencies.
@@ -141,7 +143,8 @@ mygen <- new("genambig", samples=c(paste("A", 1:100, sep=""),
              loci=c("loc1", "loc2"))
 PopNames(mygen) <- c("PopA", "PopB")
 PopInfo(mygen) <- c(rep(1, 100), rep(2, 100))
-Ploidies(mygen) <- rep(4, 200)
+mygen <- reformatPloidies(mygen, output="one")
+Ploidies(mygen) <- 4
 Usatnts(mygen) <- c(2, 2)
 Description(mygen) <- "An example for allele frequency calculation."
 
@@ -175,7 +178,8 @@ myfrequencies
 mygen <- new("genambig", samples=paste("A", 1:100, sep=""), loci="loc1")
 PopNames(mygen) <- "PopA"
 PopInfo(mygen) <- rep(1, 100)
-Ploidies(mygen) <- rep(4, 100)
+mygen <- reformatPloidies(mygen, output="one")
+Ploidies(mygen) <- 4
 Usatnts(mygen) <- 2
 for(s in Samples(mygen)){
     alleles <- unique(sample(c(122,124,126,0), 4, replace=TRUE,

@@ -3,39 +3,57 @@
 # assumes that all alleles have an equal chance of being present in more
 # than one copy.
 simpleFreq <- function(object, samples=Samples(object), loci=Loci(object)){
+  # subset the object to avoid a lot of indexing later in the function
+  object <- object[samples,loci]
+  
     # we need PopInfo and Ploidies; check for these
-    if(!all(!is.na(PopInfo(object)[samples]))){
+    if(!all(!is.na(PopInfo(object)))){
         cat("PopInfo needed for samples:",
-            samples[is.na(PopInfo(object)[samples])], sep="\n")
+            samples[is.na(PopInfo(object))], sep="\n")
         stop("PopInfo needed for this function.")
     }
-    if(!all(!is.na(Ploidies(object)[samples]))){
-        cat("Ploidies needed for samples:",
-            samples[is.na(Ploidies(object)[samples])], sep="\n")
+    if(!all(!is.na(Ploidies(object)))){
         stop("Ploidies needed for this function.")
     }
 
     # we need a genbinary object for this function; make one if necessary
-    if("genambig" %in% class(object)){
-        object <- genambig.to.genbinary(object, samples, loci)
+    if(is(object, "genambig")){
+        object <- genambig.to.genbinary(object)
     }
     Present(object) <- as.integer(1)
     Absent(object) <- as.integer(0)
 
     # get the populations that will be evaluated
-    pops <- PopNames(object)[unique(PopInfo(object)[samples])]
-    # get the total number of genomes per population
-    totgenomes <- rep(0, length(pops))
-    names(totgenomes) <- pops
-    for(p in pops){
-        totgenomes[p] <- sum(Ploidies(object)[samples[samples
-                                                      %in% Samples(object,
-                                                                   populations=p)]])
+    pops <- PopNames(object)[unique(PopInfo(object))]
+
+    # Get ploidies into a format where you can total over the populations
+    # (and don't index by locus if you don't need to)
+    if(is(object@Ploidies, "ploidymatrix")){
+      object <- reformatPloidies(object, output="collapse", erase=FALSE)
+    }
+    if(!is(object@Ploidies, "ploidysample") &&
+       length(unique(Ploidies(object, samples, loci)))==1){
+      object <- reformatPloidies(object, output="sample", erase=FALSE)
+    }
+    if(is(object@Ploidies, "ploidylocus")){
+      object <- reformatPloidies(object, output="matrix", erase=FALSE)
     }
 
-    # set up data frame to contain allele frequencies
-    freqtable <- data.frame(Genomes=totgenomes,row.names=pops)
+    # Get total genomes per population if loci are uniform ploidy
+    if(is(object@Ploidies, "ploidysample")){
+      # get the total number of genomes per population
+      totgenomes <- rep(0, length(pops))
+      names(totgenomes) <- pops
+      for(p in pops){
+          totgenomes[p] <- sum(Ploidies(object)[Samples(object,populations=p)])
+      }
 
+          # set up data frame to contain allele frequencies
+      freqtable <- data.frame(Genomes=totgenomes,row.names=pops)
+    } else { # or if loci have different ploidies
+      freqtable <- data.frame(row.names=pops)
+    }
+    
     # loop to get frequency data
     for(L in loci){
         # get all samples without missing data at this locus
@@ -44,9 +62,15 @@ simpleFreq <- function(object, samples=Samples(object), loci=Loci(object)){
         totgenomes <- rep(0, length(pops))
         names(totgenomes) <- pops
         for(p in pops){
-            totgenomes[p] <- sum(Ploidies(object)[xsamples[xsamples %in%
+            totgenomes[p] <- sum(Ploidies(object, xsamples[xsamples %in%
                                                            Samples(object,
-                                                                   populations=p)]])
+                                                           populations=p)], L))
+        }
+        # write genomes to the table if necessary
+        if(is(object@Ploidies, "ploidymatrix")){
+          totg <- data.frame(totgenomes)
+          names(totg) <- paste(L, "Genomes", sep=".")
+          freqtable <- cbind(freqtable, totg)
         }
         # make a conversion factor to weight allele presence based on ploidy
         # of each individual and number of alleles at this locus
@@ -55,7 +79,7 @@ simpleFreq <- function(object, samples=Samples(object), loci=Loci(object)){
         for(s in xsamples){
             numalleles[s] <- sum(Genotype(object, s , L))
         }
-        convf <- Ploidies(object)[xsamples]/numalleles
+        convf <- Ploidies(object,xsamples,L)/numalleles
         # make table of weighted allele presence
         loctable <- Genotypes(object, xsamples, L) * convf
         # loop through all alleles at this locus
@@ -65,7 +89,7 @@ simpleFreq <- function(object, samples=Samples(object), loci=Loci(object)){
             # loop through populations
             for(p in pops){
                 theseallelefreqs[p]<-sum(loctable[xsamples[xsamples %in%
-                                                           Samples(object, populations=p)],
+                                                Samples(object, populations=p)],
                                                   al])/totgenomes[p]
             }
             freqtable <- cbind(freqtable,theseallelefreqs)
@@ -242,14 +266,19 @@ deSilvaFreq <- function(object, self,
     # make sure self argument has been given
     if(missing(self)) stop("Selfing rate required.")
 
+    # make sure initFreq is in right format
+    if(!"Genomes" %in% names(initFreq))
+      stop("initFreq must have single Genomes column.")
+
     # convert object to genambig if necessary
     if("genbinary" %in% class(object)) object <- genbinary.to.genambig(object,
                                                                        samples,
                                                                        loci)
-
+    
     # get the ploidy (m2), and check that there is only one and that it is even
-    m2 <- unique(Ploidies(object)[samples])
-    if(length(m2) != 1) stop("Only one ploidy allowed.")
+    m2 <- unique(Ploidies(object,samples,loci))
+    if(length(m2) != 1)
+      stop("Only one ploidy allowed.  Try running subsets of data one ploidy at a time.")
     if(is.na(m2)) stop("Function requires information in Ploidies slot.")
     if(m2 %% 2 != 0) stop("Ploidy must be even.")
 
@@ -553,28 +582,43 @@ calcFst<-function(freqs, pops=row.names(freqs),
     # Set up matrix for Fst values
     fsts<-matrix(0,nrow=length(pops),ncol=length(pops),dimnames=list(pops,pops))
     # Get genome number from the table
-    genomes<-freqs$Genomes
-    names(genomes)<-pops
+    if("Genomes" %in% names(freqs)){
+      genomes<-freqs$Genomes
+      names(genomes)<-pops
+      GbyL <- FALSE
+    } else {
+      GbyL <- TRUE
+    }
     for(m in 1:length(pops)){
         for(n in m:length(pops)){
             # set up array for HT and HS values
             hets<-array(0,dim=c(length(loci),2),
                         dimnames=list(loci,c("HT","HS")))
+            if(!GbyL){
+              genomesM <- genomes[pops[m]]
+              genomesN <- genomes[pops[n]]
+            }
             for(L in loci){
-                # get just the frequencies for these pops and this locus
-                thesefreqs<-freqs[c(pops[m],pops[n]),
-                                  grep(paste(L,".",sep=""),
-                                       names(freqs),fixed=TRUE)]
-                # get average allele frequencies weighted by genomes/pop
-                avgfreq<-(thesefreqs[1,]*genomes[pops[m]] +
-                          thesefreqs[2,]*genomes[pops[n]])/
-                    (genomes[pops[m]] + genomes[pops[n]])
-                # estimate H by 1 - sum of squared allele frequencies
-                # put the heterozygositites in the array
-                hets[L,"HT"]<-1-sum(avgfreq^2)
-                hets[L,"HS"]<-((1-sum(thesefreqs[1,]^2))*genomes[pops[m]] +
-                               (1-sum(thesefreqs[2,]^2))*genomes[pops[n]])/
-                                   (genomes[pops[m]] + genomes[pops[n]])
+              if(GbyL){
+                genomesM <- freqs[pops[m],paste(L, "Genomes", sep=".")]
+                genomesN <- freqs[pops[n],paste(L, "Genomes", sep=".")]
+              }
+              # get just the frequencies for these pops and this locus
+              thesefreqs<-freqs[c(pops[m],pops[n]),
+                                grep(paste(L,".",sep=""),
+                                     names(freqs),fixed=TRUE)]
+              thesefreqs <-
+                thesefreqs[,names(thesefreqs)!=paste(L,"Genomes",sep=".")]
+              # get average allele frequencies weighted by genomes/pop
+              avgfreq<-(thesefreqs[1,]*genomesM +
+                        thesefreqs[2,]*genomesN)/
+                  (genomesM + genomesN)
+              # estimate H by 1 - sum of squared allele frequencies
+              # put the heterozygositites in the array
+              hets[L,"HT"]<-1-sum(avgfreq^2)
+              hets[L,"HS"]<-((1-sum(thesefreqs[1,]^2))*genomesM +
+                             (1-sum(thesefreqs[2,]^2))*genomesN)/
+                                 (genomesM + genomesN)
             }
             HT<-mean(hets[,"HT"])
             HS<-mean(hets[,"HS"])
@@ -600,6 +644,8 @@ write.freq.SPAGeDi <- function(freqs, usatnts, file="", digits=2,
     datalist <- list(0)
     length(datalist) <- ( length(loci) * 2 )
     item <- 1
+    genbyloc <- !"Genomes" %in% names(freqs)
+    if(!genbyloc) genomes <- freqs$Genomes
 
     for(L in loci){
         # find the alleles
@@ -608,6 +654,9 @@ write.freq.SPAGeDi <- function(freqs, usatnts, file="", digits=2,
                                                             fixed=TRUE)],
                                           split=".", fixed=TRUE))[2,])
         alleles <- as.vector(alleles)
+        if(genbyloc){
+          alleles <- alleles[alleles!="Genomes"]
+        }
         # convert alleles to numbers used in SPAGeDi file
         alleles[alleles == "null"] <- 0
         alleles <- as.integer(alleles)
@@ -623,10 +672,14 @@ write.freq.SPAGeDi <- function(freqs, usatnts, file="", digits=2,
         names(datalist)[item] <- L
         item <- item + 1
         # make a weighted average of allele frequencies across populations
-        avgfreq <- (freqs$Genomes %*%
-                    as.matrix(freqs[,grep(paste(L,".",sep=""),
-                                          names(freqs),fixed=TRUE)]))/
-                        sum(freqs$Genomes)
+        if(genbyloc){
+          genomes <- freqs[[paste(L, "Genomes", sep=".")]]
+          locindex <- grep(paste(L,".",sep=""), names(freqs),fixed=TRUE)
+          locindex <- locindex[!locindex %in% grep("Genomes", names(freqs))]
+        } else {
+          locindex <- grep(paste(L,".",sep=""), names(freqs),fixed=TRUE)
+        }
+        avgfreq <- (genomes %*% as.matrix(freqs[,locindex])) / sum(genomes)
         # add frequencies to list
         datalist[[item]] <- as.vector(avgfreq)
         names(datalist)[item] <- length(avgfreq)
@@ -654,6 +707,10 @@ freq.to.genpop <- function(freqs, pops=row.names(freqs),
     # clean up loci
     loci <- loci[loci!="Genomes"]
 
+    # errors
+    if(!"Genomes" %in% names(freqs))
+      stop("Only one Genomes column allowed.")
+
     # get population sizes
     popsizes <- freqs[pops, "Genomes"]
 
@@ -674,16 +731,16 @@ freq.to.genpop <- function(freqs, pops=row.names(freqs),
 }
 
 ## Genotype diversity functions
-# p is a vector of genotype frequencies
+# p is a vector of genotype counts
 # base = exp(1) for natural log, or base = 2 for log base 2
 Shannon <- function(p, base=exp(1)){
-    if(sum(p) != 1) stop("p must sum to 1")
-    return(-sum(p * log(p, base=base)))
+    N <- sum(p)
+    return(-sum(p/N * log(p/N, base=base)))
 }
 
 Simpson <- function(p){
-    if(sum(p) != 1) stop("p must sum to 1")
-    return(sum(p^2))
+    N <- sum(p)
+    return(sum(p*(p-1)/(N*(N-1))))
 }
 
 # ... is passed to index. (So you can adjust base of Shannon index.)
@@ -716,17 +773,22 @@ genotypeDiversity <- function(genobject,
             psamples <- psamples[!isMissing(genobject, psamples, L)]
 
             # assign to genotype groups
-            clones <- assignClones(d[[1]][L, psamples, psamples],
+            dsub <- d[[1]][L, psamples, psamples]
+            if(is.vector(dsub)){ # fix for if there was only one sample
+                dsub <- array(dsub, dim=c(1,1),
+                              dimnames=list(psamples, psamples))
+            }
+            clones <- assignClones(dsub,
                                    threshold=threshold)
             # get genotype frequencies
-            n <- length(clones) # number of individuals
+#            n <- length(clones) # number of individuals
             cl <- length(unique(clones)) # number of groups
-            freq <- rep(NA, cl) # vector to hold frequencies
+            counts <- rep(NA, cl) # vector to hold counts of individuals
             for(i in 1:cl){
-                freq[i] <- length(clones[clones == i])/n
+                counts[i] <- length(clones[clones == i])
             }
             # get diversity index
-            results[p,L] <- index(freq, ...)
+            results[p,L] <- index(counts, ...)
         }
     }
 
@@ -740,15 +802,56 @@ genotypeDiversity <- function(genobject,
     for(p in pops){
         psamples <- samples[samples %in% Samples(genobject, populations=p)]
         clones <- assignClones(d2, psamples, threshold)
-        n <- length(clones) # number of individuals
+#        n <- length(clones) # number of individuals
         cl <- length(unique(clones)) # number of groups
-        freq <- rep(NA, cl) # vector to hold frequencies
+        counts <- rep(NA, cl) # vector to hold counts of individuals
         for(i in 1:cl){
-            freq[i] <- length(clones[clones == i])/n
+            counts[i] <- length(clones[clones == i])
         }
         # get diversity index
-        results[p,"overall"] <- index(freq, ...)
+        results[p,"overall"] <- index(counts, ...)
     }
 
     return(results)
+}
+
+# function to get unique alleles and counts
+alleleDiversity <- function(genobject, samples=Samples(genobject),
+                            loci=Loci(genobject),
+                            alleles=TRUE, counts=TRUE){
+  if(!alleles && !counts)
+    stop("At least one of alleles and counts must be set to TRUE")
+  # get populations
+    if(all(is.na(PopInfo(genobject)[samples]))){
+        PopInfo(genobject)[samples] <- rep(1, length(samples))
+    }
+    if(!all(!is.na(PopInfo(genobject)[samples]))){
+        stop("PopInfo needed.")
+    }
+    pops <- PopNames(genobject)[unique(PopInfo(genobject)[samples])]
+
+    # set up results tables
+    rcounts <- matrix(NA, nrow=length(pops)+1, ncol=length(loci),
+                     dimnames=list(c(pops,"overall"),loci))
+    ralleles <- array(list(NA), dim=c(length(pops)+1,length(loci)),
+                      dimnames=dimnames(rcounts))
+    # get unique alleles
+    for(L in loci){
+      for(p in pops){
+        psamples <- samples[samples %in% Samples(genobject, populations=p)]
+        xalleles <- .unal1loc(genobject, psamples, L)
+        ralleles[[p,L]] <- xalleles
+        rcounts[p,L] <- length(xalleles)
+      }
+      xalleles <- .unal1loc(genobject, samples, L)
+      ralleles[["overall",L]] <- xalleles
+      rcounts["overall",L] <- length(xalleles)
+    }
+
+    if(alleles && counts)
+      return(list(alleles=ralleles, counts=rcounts))
+  if(alleles && !counts)
+    return(ralleles)
+  if(!alleles && counts)
+    return(rcounts)
 }

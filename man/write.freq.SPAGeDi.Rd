@@ -19,9 +19,11 @@ write.freq.SPAGeDi(freqs, usatnts, file = "", digits = 2,
   \item{freqs}{
 A data frame of population sizes and allele frequencies, such as that
 produced by \code{simpleFreq} or \code{deSilvaFreq}.  Populations are in
-rows, and alleles are in columns.  The first column is called
-\dQuote{Genomes} and contains the sizes of the populations in number of
-genomes.  All other columns contain allele frequencies.  The column
+rows, and alleles are in columns.  A column is needed containing
+population sizes in number of genomes; this may either be a single
+column called \dQuote{Genomes} or multiple columns named by the locus
+and \dQuote{Genomes}, sepearated by a period.  All other columns contain
+allele frequencies.  The column
 names for these should be the locus and allele separated by a period.
 }
   \item{usatnts}{
@@ -106,7 +108,8 @@ mygen <- new("genambig", samples=c(paste("G", 1:30, sep=""),
              loci=c("afrY", "ggP"))
 PopNames(mygen) <- c("G", "R")
 PopInfo(mygen) <- c(rep(1, 30), rep(2, 50))
-Ploidies(mygen) <- rep(4, 80)
+mygen <- reformatPloidies(mygen, output="one")
+Ploidies(mygen) <- 4
 Usatnts(mygen) <- c(2, 2)
 
 # randomly create genotypes according to pre-set allele frequencies

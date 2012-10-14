@@ -45,17 +45,11 @@ For \code{genambig.to.genbinary}: a \code{genbinary} object containing
   all of the data from \code{object}.  \code{Missing} is at the default
   value.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
+
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\linkS4class{genambig}}, \code{\linkS4class{genbinary}}

@@ -64,7 +64,7 @@ argument a vector of frequencies that sum to one.
 Additional arguments to pass to \code{index}, for example the
 \code{base} argument for \code{Shannon}.
 }
-\item{p}{A vector of frequencies that sum to one.}
+\item{p}{A vector of counts.}
 \item{base}{
 The base of the logarithm for calculating the Shannon index.  This is
 \code{exp(1)} for the natural log, or \code{2} for log base 2.
@@ -79,14 +79,14 @@ calculate a vector of genotype frequencies, which is passed to
 
 \code{Shannon} calculates the Shannon index, which is:
 
-\deqn{-\sum p_i\ln(p_i)}{-\sum p_i ln(p_i)}
+\deqn{-\sum \frac{p_i}{N}\ln(\frac{p_i}{N})}{-\sum p_i/N ln(p_i/N)}
 
 (or log base 2 or any other base, using the \code{base} argument) given
-a vector \eqn{p} of genotype frequencies.
+a vector \eqn{p} of genotype counts, where \eqn{N} is the sum of those counts.
 
 \code{Simpson} calculates the Simpson index, which is:
 
-\deqn{\sum p_{i}^2}{\sum p_i^2}
+\deqn{\sum \frac{p_{i}(p_{i} - 1)}{N(N - 1)}}{\sum p_i(p_i - 1)/(N(N - 1))}
 }
 \value{
 A matrix of diversity index results, with populations in rows and
@@ -102,16 +102,17 @@ Simpson, E. H. (1949) Measurement of diversity.  \emph{Nature}
 
 Lowe, A., Harris, S. and Ashton, P. (2004) \emph{Ecological Genetics:
   Design, Analysis, and Application}.  Wiley-Blackwell.
+
+Arnaud-Haond, S., Duarte, M., Alberto, F. and Serrao, E. A.  (2007)
+Standardizing methods to address clonality in population studies.
+\emph{Molecular Ecology} \bold{16}:5115--5139.
 }
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
 
 \seealso{
-\code{\link{assignClones}}
+\code{\link{assignClones}}, \code{\link{alleleDiversity}}
 }
 \examples{
 # set up dataset

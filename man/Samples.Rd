@@ -36,7 +36,7 @@ replacement functions alter information in one or more slots as appropriate.
 \usage{
 Samples(object, populations, ploidies)
 Samples(object) <- value
-Loci(object, usatnts)
+Loci(object, usatnts, ploidies)
 Loci(object) <- value
 PopInfo(object)
 PopInfo(object) <- value
@@ -44,7 +44,7 @@ PopNames(object)
 PopNames(object) <- value
 PopNum(object, popname)
 PopNum(object, popname) <- value
-Ploidies(object)
+Ploidies(object, samples, loci)
 Ploidies(object) <- value
 Usatnts(object)
 Usatnts(object) <- value
@@ -70,7 +70,7 @@ A character or numeric vector indicating from which populations to return
 samples. (optional)
 }
   \item{ploidies}{
-A numeric vector indicating ploidies, if only samples with a certain
+A numeric vector indicating ploidies, if only samples or loci with a certain
 ploidy should be returned.  (optional)
 }
 \item{sample}{A character string or number indicating the name or number
@@ -78,9 +78,9 @@ ploidy should be returned.  (optional)
 \item{locus}{A character string or number indicating the name or number
   of the locus whose genotype should be returned.}
 \item{samples}{A character or numeric vector indicating samples for
-  which to return genotypes. (optional)}
+  which to return genotypes or ploidies. (optional)}
 \item{loci}{A character or numeric vector indicating loci for which to
-  return genotypes.  (optional)}
+  return genotypes or ploidies.  (optional)}
 \item{usatnts}{A numeric vector indicating microsatellite repeat
   lengths, where only loci of those repeat lengths should be returned.
   (optional)}
@@ -98,8 +98,10 @@ ploidy should be returned.  (optional)
   \item For \code{PopNum}: A number (integer or can be coerced to integer)
   that should be the new population number associated with
   \code{popname}.
-  \item For \code{Ploidies}: A numeric vector (integer or can be coerced to
-  integer) indicating the ploidy of each sample.
+  \item For \code{Ploidies}: A numeric vector or matrix (integer or can be coerced to
+  integer) indicating the ploidy of each sample, locus, and/or the
+  dataset.  See \code{\link{reformatPloidies}} and
+  \code{"\linkS4class{ploidysuper}"}.
   \item For \code{Usatnts}: A numeric vector (integer or can be coerced to
   integer) indicating the repeat type of each microsatellite locus.
   Dinucleotide repeats should be represented with \code{2},
@@ -162,9 +164,10 @@ ploidy should be returned.  (optional)
 \value{
   \code{PopInfo}, \code{PopNames}, \code{Missing}, \code{Description},
   \code{Usatnts}, \code{Ploidies} and \code{Genotypes} simply return the
-  contents of the slots of the same names. \code{Samples} and
+  contents of the slots of the same names (or in the case of
+  \code{Ploidies}, \code{object@Ploidies@pld} is returned). \code{Samples} and
   \code{Loci} return character vectors taken from the \code{names} of
-  other slots (\code{Ploidies}/\code{PopInfo} and \code{Usatnts},
+  other slots (\code{PopInfo} and \code{Usatnts},
   respectively; the initialization and replacement methods ensure that
   these slots are always named according to samples and
   loci). \code{PopNum} returns an integer vector indicating the
@@ -173,17 +176,9 @@ ploidy should be returned.  (optional)
   locus, which is a vector whose exact form will depend on the class of
   \code{object}.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{deleteSamples}}, \code{\link{deleteLoci}},
@@ -224,11 +219,11 @@ PopInfo(mygen)["b1"] <- 3
 Usatnts(mygen) <- c(2,2)
 
 # indicate that all samples are tetraploid
-Ploidies(mygen) <- c(4,4,4)
+Ploidies(mygen) <- 4
 # or
-Ploidies(mygen) <- rep(4, times = length(Samples(mygen)))
+Ploidies(mygen) <- rep(4, times = length(Samples(mygen)) * length(Loci(mygen)))
 # actually, one sample is triploid
-Ploidies(mygen)["c"] <- 3
+Ploidies(mygen)["c",] <- 3
 # view ploidies
 Ploidies(mygen)
 

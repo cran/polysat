@@ -29,8 +29,8 @@ These are generic functions with methods for \code{genambig},
 \code{gendata} objects.  The methods for the subclasses remove samples
 or loci
 from the \code{@Genotypes} slot, then pass the object to the method for
-\code{gendata}, which removes samples or loci from the \code{@PopInfo}
-and \code{@Ploidies} or \code{@Usatnts} slots, respectively.  The
+\code{gendata}, which removes samples or loci from the \code{@PopInfo},
+\code{@Ploidies}, and/or \code{@Usatnts} slots, as appropriate.  The
 \code{@PopNames} slot is left untouched even if an entire population is
 deleted, in order to preserve the connection between the numbers in
 \code{@PopInfo} and the names in \code{@PopNames}.
@@ -44,9 +44,7 @@ you want to use and then use these vectors as the \code{samples} and
 An object identical to \code{object}, but with the specified samples or
 loci removed.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
+
 \author{
 Lindsay V. Clark
 }

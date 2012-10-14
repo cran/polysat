@@ -65,11 +65,7 @@ Meirmans, P. G. and Van Tienderen, P. H. (2004) GENOTYPE and GENODIVE:
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{genotypeDiversity}}

@@ -46,17 +46,10 @@ The method for \code{genambig} lists sample and locus names in each row
 \value{
 An object identical to \code{object} but with edited genotypes.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
+
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{viewGenotypes}}, \code{\link{Genotype<-}},
@@ -73,7 +66,8 @@ Genotypes(mygen, loci="loc1") <- list(c(133, 139, 142),
                                       c(136, 142))
 Genotypes(mygen, loci="loc2") <- list(c(202, 204), Missing(mygen),
                                       c(200, 206, 208))
-Ploidies(mygen) <- rep(4, times = 3)
+mygen <- reformatPloidies(mygen, output="one")
+Ploidies(mygen) <- 4
 
 # open up the data editor
 mygen <- editGenotypes(mygen)

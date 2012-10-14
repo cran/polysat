@@ -222,7 +222,7 @@ find.na.dist.not.missing<-function(object, distarray,
 
 genotypeProbs <- function(object, sample, locus, freq=NULL, gprob=NULL,
                           alleles=NULL){
-    pl <- Ploidies(object)[sample] # get ploidy
+    pl <- Ploidies(object,sample,locus) # get ploidy
     gen <- Genotype(object, sample, locus) # get ambiguous genotype
 
     # determine which method we are using
@@ -327,7 +327,7 @@ meandistance.matrix2 <- function(object, samples=Samples(object),
                             all.distances=FALSE, distmetric = Bruvo.distance,
                             progress=TRUE, ...){
     # Errors
-    if(!all(!is.na(Ploidies(object)[samples])))
+    if(!all(!is.na(Ploidies(object,samples,loci))))
         stop("Ploidies needed.")
     if(!all(!is.na(PopInfo(object)[samples])))
         stop("PopInfo needed.")
@@ -347,12 +347,15 @@ meandistance.matrix2 <- function(object, samples=Samples(object),
         pops <- PopNames(object)[unique(PopInfo(object)[samples])]
         for(p in pops){
             psamples <- samples[samples %in% Samples(object, populations=p)]
-            m2 <- unique(Ploidies(object)[psamples])
-            if(length(m2) != 1) stop("Only one ploidy allowed.")
-            if(is.na(m2))
-                stop("Function requires information in Ploidies slot.")
-            if(m2 %% 2 != 0) stop("Ploidy must be even.")
+            
             for(L in loci){
+                m2 <- unique(Ploidies(object, psamples, L))
+                if(length(m2) != 1)
+                  stop("Only one ploidy allowed per pop*locus when self > 0.")
+                if(is.na(m2))
+                    stop("Function requires information in Ploidies slot.")
+                if(m2 %% 2 != 0) stop("Ploidy must be even.")
+                
                 cat("Setting up genotype probabilities...",sep="\n")
                 subfreq <- freq[p, grep(L, names(freq), fixed=TRUE)]
                 templist <- names(subfreq)[subfreq !=0]
@@ -462,6 +465,9 @@ assignClones <- function(d, samples=dimnames(d)[[1]], threshold=0){
     results[1] <- 1 # the first individual is clone 1
     numclones <- 1 # there is one clone so far
 
+     # for just one sample, we're done
+    if(length(samples)>1){
+
     # assign the rest
     for(i in 2:length(samples)){
         s <- samples[i] # i is the numerical index, s is the character index
@@ -489,6 +495,7 @@ assignClones <- function(d, samples=dimnames(d)[[1]], threshold=0){
     clones <- clones[!is.na(clones)]
     results <- match(results, clones)
     names(results) <- samples
+  }
 
     return(results)
 }

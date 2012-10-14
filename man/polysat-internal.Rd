@@ -4,10 +4,13 @@
 \alias{.genlist}
 \alias{.ranmul}
 \alias{.selfmat}
+\alias{.unal1loc}
 \title{Internal Functions in polysat}
 \description{
-  These internal functions in \pkg{polysat} are used for calculating
-  genotype probabilities under partial selfing.
+  The internal functions .G, .indexg, .genlist, .ranmul, and .selfmat
+  are used for calculating
+  genotype probabilities under partial selfing.  The internal function
+  .unal1loc finds all unique alleles at a single locus.
 }
 \usage{
 .G(q, n)
@@ -15,6 +18,7 @@
 .genlist(ng, na1, m2)
 .ranmul(ng, na1, ag, m2)
 .selfmat(ng, na1, ag, m2)
+.unal1loc(object, samples, locus)
 }
 \arguments{
   \item{q}{Integer.}
@@ -23,7 +27,12 @@
   \item{na1}{Integer. The number of alleles, including a null.}
   \item{m2}{Integer.  The ploidy.}
   \item{ng}{Integer.  The number of genotypes.}
-  \item{ag}{An array of genotypes such as that produced by \code{.genlist}.}
+  \item{ag}{An array of genotypes such as that produced by
+    \code{.genlist}.}
+  \item{object}{A \code{"genambig"} object.}
+  \item{samples}{Optional, a numeric or character vector indicating
+    which samples to use.}
+  \item{locus}{A character string or number indicating which locus to use.}
 }
 \value{
   \code{.G} returns
@@ -46,9 +55,11 @@
   represented in rows, and offspring genotypes in columns.  The numbers
   indicate relative amounts of offspring genotypes produced when the
   parental genotypes are self-fertilized.
+
+  \code{.unal1loc} returns a vector containing all unique alleles, not
+  including \code{Missing(object)}.
 }
-\details{
-}
+
 \references{
   De Silva, H. N., Hall, A. J., Rikkerink, E., and Fraser, L. G. (2005)
   Estimation of allele frequencies in polyploids under
@@ -56,7 +67,8 @@ certain patterns of inheritance.  \emph{Heredity} \bold{95}, 327--334
 }
 \seealso{
   \code{\link{deSilvaFreq}}, \code{\link{meandistance.matrix2}},
-  \code{\link{genotypeProbs}}
+  \code{\link{genotypeProbs}}, \code{\link{genambig.to.genbinary}},
+  \code{\link{alleleDiversity}}
 }
 \examples{
 # Calculation of genotype probabilities in a tetraploid with four

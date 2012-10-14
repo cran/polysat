@@ -9,7 +9,8 @@ export(Bruvo.distance,
        Lynch.distance, write.SPAGeDi, read.SPAGeDi, write.freq.SPAGeDi,
        read.POPDIST, write.POPDIST, freq.to.genpop, genotypeProbs,
        meandistance.matrix2, assignClones, Shannon, Simpson, genotypeDiversity,
-       Bruvo2.distance)
+       Bruvo2.distance, reformatPloidies,alleleDiversity,read.STRand,
+gendata.to.genind)
 exportMethods(estimatePloidy, Samples, "Samples<-", Loci, "Loci<-", PopInfo,
               "PopInfo<-", PopNames, "PopNames<-", Ploidies, "Ploidies<-",
               Usatnts,
@@ -17,5 +18,6 @@ exportMethods(estimatePloidy, Samples, "Samples<-", Loci, "Loci<-", PopInfo,
               Description, "Description<-", PopNum, "PopNum<-", Genotype,
               "Genotype<-", Genotypes, "Genotypes<-", isMissing, viewGenotypes,
               editGenotypes, Present, "Present<-", Absent, "Absent<-", summary,
-              merge)
-exportClasses(gendata, genambig, genbinary)
+              merge, pld, "pld<-", plCollapse)
+exportClasses(gendata, genambig, genbinary, ploidysuper, ploidymatrix, 
+              ploidylocus, ploidysample, ploidyone)

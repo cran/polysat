@@ -2,8 +2,11 @@ write.Structure <- function(object, ploidy, file="",
                             samples=Samples(object), loci=Loci(object),
                             writepopinfo=TRUE, extracols=NULL,
                             missingout=-9){
-    if(!all(!is.na(Ploidies(object)[samples])))
+    if(!all(!is.na(Ploidies(object, samples=samples, loci=loci))))
         stop("Ploidies needed.")
+
+    if(missing(ploidy))
+    stop("Ploidy of file must be specified seperately from ploidies of dataset.")
 
     structdata <- data.frame(rowlabel=c("missing",rep(samples, each=ploidy)))
     thiscol = 1 # which column we are working with
@@ -34,27 +37,27 @@ write.Structure <- function(object, ploidy, file="",
                 thesealleles <- rep(missingout, ploidy)
             } else {
             #If missing data must be inserted to reflect a lower ploidy level:
-            if(Ploidies(object)[s] < ploidy){
-                if(length(Genotype(object,s,L)) == Ploidies(object)[s]){
+            if(Ploidies(object, s, L) < ploidy){
+                if(length(Genotype(object,s,L)) == Ploidies(object,s,L)){
                     #fully heterozygous genotype
                     thesealleles <- c(Genotype(object,s,L),
                                     rep(missingout,
-                                        times=ploidy-Ploidies(object)[s]))
+                                        times=ploidy-Ploidies(object,s,L)))
                 } else {
-                  if(length(Genotype(object,s,L)) < Ploidies(object)[s]){
+                  if(length(Genotype(object,s,L)) < Ploidies(object,s,L)){
                       #duplicate the first allele to get to the right ploidy
                       thesealleles <- c(Genotype(object,s,L),
                                         rep(Genotype(object,s,L)[1],
-                                            times=Ploidies(object)[s]-
+                                            times=Ploidies(object,s,L)-
                                             length(Genotype(object,s,L))),
                                         rep(missingout,
-                                            times=ploidy-Ploidies(object)[s]))
+                                            times=ploidy-Ploidies(object,s,L)))
                   } else {
                       #randomly choose alleles to use if there are too many
                       thesealleles <- c(sample(Genotype(object,s,L)
-                                       ,Ploidies(object)[s],replace=FALSE),
+                                       ,Ploidies(object,s,L),replace=FALSE),
                                         rep(missingout,
-                                            times=ploidy-Ploidies(object)[s]))
+                                            times=ploidy-Ploidies(object,s,L)))
                       cat(paste("Randomly removed alleles:",s,L), sep="\n")
                   }
               }
@@ -91,7 +94,7 @@ write.Structure <- function(object, ploidy, file="",
 write.GenoDive<-function(object,
                          digits=2, file="", samples=Samples(object),
                          loci=Loci(object)){
-    if(!all(!is.na(Ploidies(object)[samples])))
+    if(!all(!is.na(Ploidies(object, samples=samples, loci=loci))))
         stop("Ploidies needed.
               Use estimatePloidy to get max number of alleles.")
     if(!all(!is.na(PopInfo(object)[samples])))
@@ -102,7 +105,7 @@ write.GenoDive<-function(object,
     numsam<-length(samples)
     numloc<-length(loci)
     numpop<-length(unique(PopInfo(object)[samples]))
-    maxploidy<-max(Ploidies(object)[samples])
+    maxploidy<-max(Ploidies(object,samples,loci))
 
     # start a character vector to contain all the lines of the file
     lines<-c(Description(object),
@@ -168,7 +171,7 @@ write.SPAGeDi<-function(object,samples=Samples(object),
                                              Y=rep(1,length(samples)),
                                              row.names=samples)
                         ){
-    if(!all(!is.na(Ploidies(object)[samples])))
+    if(!all(!is.na(Ploidies(object,samples,loci))))
         stop("Ploidies needed.")
     if(!all(!is.na(PopInfo(object)[samples])))
             stop("PopInfo needed.")
@@ -199,17 +202,17 @@ write.SPAGeDi<-function(object,samples=Samples(object),
         }
         names(genotypesL) <- samples
         # add zeros up to correct ploidy, delete alleles if necessary
-        zerostoadd<-Ploidies(object)[samples] - mapply(length,genotypesL)
+        zerostoadd<-Ploidies(object,samples,L) - mapply(length,genotypesL)
         names(zerostoadd)<-samples
         for(s in samples){
             if(length(genotypesL[[s]])==1){
                 # replicate allele if totally homozygous
-                genotypesL[[s]]<-rep(genotypesL[[s]],Ploidies(object)[s])
+                genotypesL[[s]]<-rep(genotypesL[[s]],Ploidies(object,s,L))
             } else {
                 if(zerostoadd[s] < 0){
                     # randomly remove alleles if there are too many
                     genotypesL[[s]]<-sample(genotypesL[[s]],
-                                              Ploidies(object)[s],
+                                              Ploidies(object,s,L),
                                             replace=FALSE)
                     cat("Alleles randomly removed to get to ploidy:",L,s,"\n")
                 } else {
@@ -239,17 +242,18 @@ write.SPAGeDi<-function(object,samples=Samples(object),
                 col.names=TRUE,quote=FALSE)
     cat(paste(length(samples),length(unique(PopInfo(object)[samples])),
               dim(spatcoord)[2],
-                length(loci),digits,max(Ploidies(object)[samples]),sep="\t"),
+                length(loci),digits,max(Ploidies(object,samples,loci)),
+              sep="\t"),
         "0",
         readLines("SpagTemp.txt"),"END",sep="\n",file=file)
 }
 
 write.GeneMapper<-function(object,file="",samples=Samples(object),
                            loci=Loci(object)){
-    if(!all(!is.na(Ploidies(object)[samples])))
+    if(!all(!is.na(Ploidies(object,samples,loci))))
         stop("Ploidies needed to determine number of columns.")
     # figure out how many allele columns are needed
-    numallelecol<-max(Ploidies(object)[samples])
+    numallelecol<-max(Ploidies(object,samples,loci))
     # figure out how many rows are needed
     numrows<-length(samples)*length(loci)
     # set up data frame
@@ -285,7 +289,7 @@ write.Tetrasat<-function(object, samples=Samples(object), loci=Loci(object),
             stop("PopInfo needed.")
     if(!all(!is.na(Usatnts(object)[loci])))
         stop("Usatnts needed.")
-    if(!all(Ploidies(object)[samples] == 4))
+    if(!all(Ploidies(object,samples,loci) == 4))
         stop("Ploidy must be 4.")
 
     # a vector of populations to cycle through
@@ -391,7 +395,7 @@ write.ATetra<-function(object, samples=Samples(object), loci=Loci(object),
                        file=""){
     if(!all(!is.na(PopInfo(object)[samples])))
             stop("PopInfo needed.")
-    if(!all(Ploidies(object)[samples] == 4))
+    if(!all(Ploidies(object,samples,loci) == 4))
         stop("Ploidy must be 4.")
 
     # set up a character vector to hold the lines for the file
@@ -460,7 +464,7 @@ write.POPDIST <- function(object, samples=Samples(object),
     # error messages
     if(!all(!is.na(PopInfo(object)[samples])))
         stop("PopInfo needed")
-    if(!all(!is.na(Ploidies(object)[samples])))
+    if(!all(!is.na(Ploidies(object,samples,loci))))
         stop("Ploidies needed")
     # start a vector of lines to write to the file
     Lines <- c(Description(object)[1], loci)
@@ -478,8 +482,9 @@ write.POPDIST <- function(object, samples=Samples(object),
         }
         # warning message for mixed ploidy
         if(length(unique(
-             Ploidies(object)[samples[samples %in% Samples(object,
-                                                           populations=p)]]))>1)
+             Ploidies(object,samples[samples %in% Samples(object,
+                                                           populations=p)],
+                      loci)))>1)
             warning(paste("Mixed ploidy in population",p,
                           "; POPDIST may reject file."))
     }
@@ -519,12 +524,12 @@ write.POPDIST <- function(object, samples=Samples(object),
             } else {
                 alleles <- as.character(thesegen[[s,L]])
             }
-            if(length(alleles) > Ploidies(object)[s]){
-                alleles <- sample(alleles, Ploidies(object)[s])
+            if(length(alleles) > Ploidies(object,s,L)){
+                alleles <- sample(alleles, Ploidies(object,s,L))
                 warning(paste("Alleles randomly removed:",s,L))
             }
             Lines[samindex[s]] <- paste(Lines[samindex[s]], " ", sep="")
-            for(a in 1:Ploidies(object)[s]){
+            for(a in 1:Ploidies(object,s,L)){
                 if(a > length(alleles)){
                     Lines[samindex[s]] <- paste(Lines[samindex[s]],"00",sep="")
                 } else {
@@ -538,4 +543,30 @@ write.POPDIST <- function(object, samples=Samples(object),
     }
 
     cat(Lines, file=file, sep="\n")
+}
+
+gendata.to.genind <- function(object, samples=Samples(object),
+                              loci=Loci(object)){
+  require(adegenet)
+  # Errors
+  if(!is(object, "gendata")) stop("genambig or genbinary object needed.")
+  ploidy <- unique(Ploidies(object, samples, loci))
+  if(length(ploidy)>1) stop("Single ploidy needed for genind.")
+  if(is.na(ploidy)) stop("Please specify ploidy.")
+
+  # Get genbinary if necessary
+  if(is(object, "genambig"))
+    object <- genambig.to.genbinary(object)
+
+  # export genotypes table
+  tab <- Genotypes(object, samples, loci)
+  # convert missing data to NA
+  tab[tab == Missing(object)] <- NA
+  # make column headings usable
+  dimnames(tab)[[2]] <- gsub(".","-", dimnames(tab)[[2]], fixed=TRUE)
+
+  # create genind object
+  x <- genind(tab, pop=PopNames(object)[PopInfo(object)[samples]],
+              ploidy=ploidy, type="PA")
+  return(x)
 }

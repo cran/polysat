@@ -79,6 +79,12 @@ samples will be numbered instead, and if you like you can use the
 import.  Likewise, if \code{markernames=FALSE}, the
 loci will be numbered automatically by the column names that
 \code{read.table} creates, but these can also be edited after the fact.
+
+The \code{Ploidies} slot of the \code{"genambig"} object that is created
+is initially indexed by both sample and locus, with ploidy being
+written to the slot on a per-genotype basis.  After all genotypes have
+been imported, \code{\link{reformatPloidies}} is used to convert
+\code{Ploidies} to the simplest possible format before the object is returned.
 }
 \value{
 If \code{getexcols=FALSE}, the function returns only a \code{genambig} object.
@@ -96,27 +102,23 @@ genotype object described above.
   Hubisz, M. J., Falush, D., Stephens, M. and Pritchard, J. K. (2009)
   Inferring weak population structure with the assistance of sample
   group information.  \emph{Molecular Ecology Resources} \bold{9},
-  1322-1332.
+  1322--1332.
 
   Falush, D., Stephens, M. and Pritchard, J. K.  (2007)
   Inferences of population structure using multilocus genotype data:
   dominant markers and null alleles.  \emph{Molecular Ecology Notes}
-  \bold{7}, 574-578.
+  \bold{7}, 574--578.
 }
 \author{
 Lindsay V. Clark
 }
-\note{
-
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{write.Structure}}, \code{\link{read.GeneMapper}},
 \code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
 \code{\link{read.GenoDive}},
-\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}}
+\code{\link{read.SPAGeDi}}, \code{\link{read.POPDIST}},
+\code{\link{read.STRand}}
 }
 \examples{
 # create a file to read (normally done in a text editor or spreadsheet

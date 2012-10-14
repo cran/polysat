@@ -155,17 +155,11 @@ Boolean value or an array of Boolean values is returned.}
       \code{\link{merge,genambig,genambig-method}}.}
 	 }
 }
-\references{
-%%  ~~put references to the literature/web site here~~
-}
+
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\linkS4class{gendata}}, \code{\link[=Samples]{Accessors}},

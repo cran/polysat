@@ -75,13 +75,12 @@ Lindsay V. Clark
   or marker was left blank in one of the input files.
 }
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
 \seealso{
 \code{\linkS4class{genambig}}, \code{\link{read.Structure}},
 \code{\link{read.GenoDive}}, \code{\link{read.SPAGeDi}},
 \code{\link{read.Tetrasat}}, \code{\link{read.ATetra}},
-\code{\link{write.GeneMapper}}, \code{\link{read.POPDIST}}
+\code{\link{write.GeneMapper}}, \code{\link{read.POPDIST}},
+\code{\link{read.STRand}}
 }
 \examples{
 # create a table of data

@@ -17,7 +17,9 @@ stringsAsFactors = FALSE))[1, ]))
 A data frame of allele frequencies and population sizes such as that
 produced by \code{simpleFreq} or \code{deSilvaFreq}.  Each population 
 is in one row, and a
-column called \code{Genomes} contains the relative size of each
+column called \code{Genomes} (or multiple columns containing the locus
+names and \dQuote{Genomes} seperated by a period) contains the relative
+size of each
 population.  All other columns contain allele frequencies.  The names of
 these columns are the locus name and allele name, separated by a period.
 }
@@ -55,11 +57,6 @@ Nei, M. (1973) Analysis of gene diversity in subdivided populations.
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{simpleFreq}}, \code{\link{deSilvaFreq}}
@@ -75,6 +72,7 @@ Genotypes(mygenotypes, loci = "loc2") <- list(c(130,134), c(138,140),
                                               c(130,136,140),
     c(138), c(136,140), c(130,132,136))
 PopInfo(mygenotypes) <- c(1,1,1,2,2,2)
+mygenotypes <- reformatPloidies(mygenotypes, output="sample")
 Ploidies(mygenotypes) <- c(2,2,4,4,2,4)
 
 # calculate allele frequencies

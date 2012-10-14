@@ -66,16 +66,11 @@ similarity of polyploids: a new version of the computer program POPDIST
 
 Guldbrandtsen, B., Tomiuk, J. and Loeschcke, B.  (2000) POPDIST version
 1.1.1: A program to calculate population genetic distance and identity
-measures.  \emph{Journal of Heredity} \bold{91}, 178-179.
+measures.  \emph{Journal of Heredity} \bold{91}, 178--179.
 }
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{read.POPDIST}}, \code{\link{write.Tetrasat}},
@@ -87,6 +82,7 @@ Lindsay V. Clark
 # create a "genambig" object containing the dataset
 mygen <- new("genambig", samples=c("a", "b", "c", "d"),
              loci=c("loc1", "loc27"))
+mygen <- reformatPloidies(mygen, output="sample")
 Description(mygen) <- "Some example data for POPDIST"
 PopInfo(mygen) <- c(1,1,2,2)
 PopNames(mygen) <- c("Old Orchard Beach", "York Beach")

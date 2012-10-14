@@ -43,20 +43,13 @@ to fill in the result for each element of the array.
   dimension, filled with Boolean values indicating whether the genotype
   for each sample*locus combination is missing.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
+
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link{Missing}}, \code{\link{Missing<-}}, \code{\link{Genotype}},
+\code{\link{Missing}}, \code{\link{Missing<-}}, \code{\link{Genotype}}, 
 \code{\link{find.missing.gen}}
 }
 \examples{

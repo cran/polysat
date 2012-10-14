@@ -61,44 +61,44 @@ The sample names from \code{samples} will be used as row
   the sample names a number of times as dictated by \code{ploidy}.
 
   In writing genotypes to the file, \code{write.Structure} compares the number
-  of alleles in the genotype, the ploidy of the sample as stored in
+  of alleles in the genotype, the ploidy of the sample*locus as stored in
   \code{Ploidies}, and the ploidy of the file as stored in
   \code{ploidy}, and does one of six things (for a given sample x and
   locus loc):
 
-  1) If \code{Ploidies(object)[x]} is greater than or equal to
+  1) If \code{Ploidies(object,x,loc)} is greater than or equal to
   \code{ploidy}, and
   \code{length(Genotype(object, x, loc))} is equal to \code{ploidy}, the
   genotype data are used as is.
 
-  2) If \code{Ploidies(object)[x]} is greater than or equal to
+  2) If \code{Ploidies(object,x,loc)} is greater than or equal to
   \code{ploidy}, and
   \code{length(Genotype(object, x, loc))} is less than \code{ploidy},
   the first allele is
   duplicated as many times as necessary for there to be as many alleles
   as \code{ploidy}.
 
-  3) If \code{Ploidies(object)[x]} is greater than or equal to
+  3) If \code{Ploidies(object,x,loc)} is greater than or equal to
   \code{ploidy}, and \code{length(Genotype(object, x, loc))} is greater
   than \code{ploidy}, a random sample of
   the alleles, without replacement, is used as the genotype.
 
-  4) If \code{Ploidies(object)[x]} is less than \code{ploidy}, and
+  4) If \code{Ploidies(object,x,loc)} is less than \code{ploidy}, and
   \code{length(Genotype(object, x, loc))} is equal to
-  \code{Ploidies(object)[x]}, the genotype
+  \code{Ploidies(object,x,loc)}, the genotype
   data are used as is and missing data symbols are inserted in the extra
   rows.
 
-  5) If \code{Ploidies(object)[x]} is less than \code{ploidy}, and
+  5) If \code{Ploidies(object,x,loc)} is less than \code{ploidy}, and
   \code{length(Genotype(object, x, loc))} is less than
-  \code{Ploidies(object)[x]}, the first
+  \code{Ploidies(object,x,loc)}, the first
   allele is duplicated as many times as necessary for there to be as
-  many alleles as \code{Ploidies(object)[x]}, and missing data symbols
+  many alleles as \code{Ploidies(object,x,loc)}, and missing data symbols
   are inserted in the extra rows.
 
-  6) If \code{Ploidies(object)[x]} is less than \code{ploidy}, and
+  6) If \code{Ploidies(object,x,loc)} is less than \code{ploidy}, and
   \code{length(Genotype(object, x, loc))} is greater than
-  \code{Ploidies(object)[x]}, a random
+  \code{Ploidies(object,x,loc)}, a random
   sample, without replacement, of \code{Ploidies(object)[x]} alleles is
   used, and
   missing data symbols are inserted in the extra rows. (Alleles are

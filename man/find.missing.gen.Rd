@@ -25,26 +25,18 @@ A character vector of all loci to be searched.  Must be a subset of
 \code{Loci(object)}.
 }
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
+
 \value{
 A data frame with no row names.  The first column is named
 \dQuote{Locus} and the second column is named \dQuote{Sample}.  Each
 row represents one missing genotype, and gives the locus and sample
 of that genotype.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
+
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{isMissing}}

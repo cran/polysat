@@ -7,8 +7,10 @@
 \alias{Description,gendata-method}
 \alias{Description<-,gendata-method}
 \alias{initialize,gendata-method}
-\alias{Loci,gendata,missing-method}
-\alias{Loci,gendata,numeric-method}
+\alias{Loci,gendata,missing,missing-method}
+\alias{Loci,gendata,numeric,missing-method}
+\alias{Loci,gendata,missing,numeric-method}
+\alias{Loci,gendata,numeric,numeric-method}
 \alias{Loci<-,gendata-method}
 \alias{Missing,gendata-method}
 \alias{Missing<-,gendata-method}
@@ -45,9 +47,12 @@ Objects can be created by calls of the form \code{new("gendata", samples, loci, 
 The missing data symbol will be set to \code{-9} by default.  The
 default initial value for \code{PopNames} is a
 character vector of length 0, and for \code{Description} is the string
-\code{"Insert dataset description here"}.  For
+\code{"Insert dataset description here"}.  The default initial value for
+the \code{Ploidies} slot is a \code{"\linkS4class{ploidymatrix}"}
+object, containing a matrix filled with \code{NA} and named by samples
+in the first dimension and loci in the second dimension.  For
 other slots, vectors filled with \code{NA} will be generated and will be
-named by samples (for \code{PopInfo} and \code{Ploidies}) or loci (for
+named by samples (for \code{PopInfo}) or loci (for
 \code{Usatnts}).  The slots can then be edited
 using the methods described below.
 
@@ -72,9 +77,11 @@ object from one of \code{gendata}'s subclasses, such as \code{genambig}.
      divided the number used to represent an allele by the corresponding
    number in \code{Usatnts} (and rounded if necessary), the result would
  be the number of repeats (plus some additional length for flanking regions). }
-    \item{\code{Ploidies}:}{Object of class \code{"integer"}.  This
-      vector must be named by sample names.  Each element represents the
-    ploidy of that sample.  \code{NA} indicates unknown ploidy. }
+    \item{\code{Ploidies}:}{Object of class \code{"ploidysuper"}.  This
+      object will contain a \code{pld} slot that is a matrix named by
+      samples and loci, a vector named by samples or loci, or a single
+      value, depending on the subclass.  Each element is an integer that
+      represents ploidy.  \code{NA} indicates unknown ploidy. }
     \item{\code{PopInfo}:}{Object of class \code{"integer"}.  This
       vector also must be named by sample names.  Each element
       represents the number of the population to which each sample belongs. }
@@ -103,13 +110,23 @@ object from one of \code{gendata}'s subclasses, such as \code{genambig}.
       \code{gendata} object is created with sample and locus names used
       to index the appropriate slots. }
     \item{Loci}{\code{signature(object = "gendata", usatnts =
-	"missing")}: Returns a character vector containing all locus
+	"missing", ploidies="missing")}: Returns a character vector
+      containing all locus
       names for the object.  The method accomplishes this by returning
       \code{names(object@Usatnts)}. }
     \item{Loci}{\code{signature(object = "gendata", usatnts =
-	"numeric")}: Returns a character vector of all loci for a given
+	"numeric", ploidies = "missing")}: Returns a character vector
+      of all loci for a given
       set of repeat lengths.  For example, if \code{usatnts = 2} all
-      loci with dinucleotide repeats will be returned. }
+      loci with dinucleotide repeats will be returned.}
+    \item{Loci}{\code{signature(object= "gendata", usatnts = "missing",
+    ploidies = "numeric")}: Returns a character vector of all loci for a
+  given set of ploidies. Only works if \code{object@Ploidies} is a
+  \code{"\linkS4class{ploidylocus}"} object.}
+\item{Loci}{\code{signature(object = "gendata", usatnts = "numeric",
+ploidies = "numeric")}: Returns a character vector of all loci that have
+one of the indicated repeat types and one of the indicated ploidies.
+Only works if \code{object@Ploidies} is a \code{"ploidylocus"} object.}
     \item{Loci<-}{\code{signature(object = "gendata")}: Assigns new
       names to loci in the dataset (changes \code{names(object@Usants)}.
      Should not be used for adding or removing loci.}
@@ -117,13 +134,15 @@ object from one of \code{gendata}'s subclasses, such as \code{genambig}.
       missing data symbol from \code{object@Missing}. }
     \item{Missing<-}{\code{signature(object = "gendata")}: Assigns a new
     value to \code{object@Missing} (changes the missing data symbol).}
-    \item{Ploidies}{\code{signature(object = "gendata")}: Returns the
-      ploidies of samples in the dataset (\code{object@Ploidies}). }
+  \item{Ploidies}{\code{signature(object = "gendata", samples = "ANY",
+    loci = "ANY")}: Returns the
+      ploidies in the dataset (\code{object@Ploidies}), indexed by
+      sample and locus if applicable.. }
     \item{Ploidies<-}{\code{signature(object = "gendata")}: Assigns new
       values to ploidies of samples in the dataset. The assigned values
       are coerced to integers by the method.  Names in the assigned
-      vector are ignored; sample names already present in the
-      \code{gendata} object are used instead.}
+      vector or matrix are ignored; sample and/or locus names already
+      present in the \code{gendata} object are used instead.}
     \item{PopInfo}{\code{signature(object = "gendata")}: Returns the
       population numbers of samples in the dataset  (\code{object@PopInfo}). }
     \item{PopInfo<-}{\code{signature(object = "gendata")}: Assigns new
@@ -153,14 +172,16 @@ object from one of \code{gendata}'s subclasses, such as \code{genambig}.
 	"missing", ploidies = "missing")}: Returns all sample names. }
     \item{Samples}{\code{signature(object = "gendata", populations =
 	"missing", ploidies = "numeric")}: Returns all sample names for
-      a given set of ploidies. }
+      a given set of ploidies. Only works if \code{object@Ploidies} is a
+    \code{"\linkS4class{ploidysample}"} object.}
     \item{Samples}{\code{signature(object = "gendata", populations =
 	"numeric", ploidies = "missing")}: Returns all sample names for
       a given set of population numbers. }
     \item{Samples}{\code{signature(object = "gendata", populations =
 	"numeric", ploidies = "numeric")}: Returns all sample names for
       a given set of population numbers and ploidies.  Only samples that
-    fit both criteria will be returned.}
+    fit both criteria will be returned.  Only works if
+    \code{object@Ploidies} is a \code{"ploidysample"} object.}
     \item{Samples<-}{\code{signature(object = "gendata")}: Assigns new
       names to samples.  This edits both \code{names(object@PopInfo)} and
       \code{names(object@Ploidies)}.  It should not be used for adding
@@ -190,17 +211,10 @@ object from one of \code{gendata}'s subclasses, such as \code{genambig}.
       two genotype objects.  See \code{\link{merge,gendata,gendata-method}}.}
 	 }
 }
-\references{
-%%  ~~put references to the literature/web site here~~
-}
+
 \author{
 Lindsay V. Clark
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
   \code{\linkS4class{genambig}}, \code{\linkS4class{genbinary}},
@@ -219,7 +233,7 @@ Description(mygen) <- "An example for the documentation"
 Usatnts(mygen) <- c(2,3)
 PopNames(mygen) <- c("PopV", "PopX")
 PopInfo(mygen) <- c(2,1,2)
-Ploidies(mygen) <- c(2,2,4)
+Ploidies(mygen) <- c(2,2,4,2,2,2)
 
 # view a summary of the object
 summary(mygen)
