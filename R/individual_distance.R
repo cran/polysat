@@ -1,7 +1,5 @@
 Bruvo.distance <- function(genotype1, genotype2, maxl=9, usatnt=2, missing=-9) {
 
-require(combinat) # for permn
-
 if(is.na(usatnt)) stop("Bruvo.distance needs info from Usatnts slot.")
 
 if(identical(genotype1, genotype2)&&genotype1[1]!=missing) {dist <- 0} else {
@@ -74,10 +72,13 @@ Lynch.distance<-function(genotype1,genotype2,usatnt=NA,missing=-9){
         # return NA if there is any missing data
         distance<-NA
     } else {
+        # make sure each allele is only listed once
+        genotype1 <- unique(genotype1)
+        genotype2 <- unique(genotype2)
         # get the average number of bands for the two genotypes
         meanbands<-(length(genotype1)+length(genotype2))/2
         # find how many bands the genotypes have in common
-        commonbands<-length(genotype1[genotype1 %in% genotype2])
+        commonbands<- sum(genotype1 %in% genotype2)
         # calculate the distance
         distance<- 1-(commonbands/meanbands)
     }

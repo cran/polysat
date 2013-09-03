@@ -1,3 +1,18 @@
+Changes in version 1.3-2
+
+read.GeneMapper has been edited to prevent the import of alleles as factors.
+The forceInteger argument has also been added to this function to prevent users 
+from accidentally importing alleles as character strings.
+
+read.STRand has been edited to fix a bug that caused an error when a given locus
+had a maximum of one allele per individual.
+
+Lynch.distance has been edited to be robust to alleles being repeated in a 
+genotype (e.g. if a tetraploid homozygote is coded as AAAA instead of A).
+
+The function Simpson.var, which calculates the variance of the Simpson index and
+can be used with the genotypeDiversity function, has been added.
+
 Changes in version 1.3-1
 
 The internal function .ulal1loc has been added.  This function finds all 

@@ -102,6 +102,7 @@ SPAGeDi can already estimate allele frequencies in a way that is
 \code{\link{write.SPAGeDi}}, \code{\link{deSilvaFreq}}
 }
 \examples{
+\dontrun{
 # set up a genambig object to use in this example
 mygen <- new("genambig", samples=c(paste("G", 1:30, sep=""),
                                    paste("R", 1:50, sep="")),
@@ -137,7 +138,18 @@ write.SPAGeDi(mygen, file="SPAGdataFreqExample.txt")
 myfreq <- deSilvaFreq(mygen, self = 0.05)
 
 # write allele frequencies file
-write.freq.SPAGeDi(myfreq, usatnts=Usatnts(mygen), file="SPAGfreqExample.txt")
+write.freq.SPAGeDi(myfreq, usatnts=Usatnts(mygen),
+file="SPAGfreqExample.txt")
+}
+\dontshow{
+# a shorter example for R CMD check
+myfreq2 <- data.frame(row.names=c("G","R"), Genomes=c(120,200),
+             abc.130=c(0.13, 0.2), abc.132=c(0.34, 0.5),
+             abc.134=c(0.53, 0.3))
+myusatnts <- as.integer(2)
+names(myusatnts) <- "abc"
+write.freq.SPAGeDi(myfreq2, usatnts=myusatnts, file="SPAGfreqExample2.txt")
+}
 
 }
 \keyword{ file }

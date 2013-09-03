@@ -1,4 +1,4 @@
-read.GeneMapper<-function(infiles){
+read.GeneMapper<-function(infiles, forceInteger=TRUE){
     # read files and get names of samples and loci
     samples<-c()
     loci<-c()
@@ -8,7 +8,7 @@ read.GeneMapper<-function(infiles){
     names(cc) <- c("Sample.Name","Marker")
     for(i in 1:length(infiles)){
         locusdata[[i]]<-read.table(infiles[i],sep="\t",header=TRUE,
-                                   colClasses=cc)
+                                   colClasses=cc, stringsAsFactors=FALSE)
         samples<-c(samples,locusdata[[i]][["Sample.Name"]])
         loci<-c(loci,locusdata[[i]][["Marker"]])
     }
@@ -21,6 +21,11 @@ read.GeneMapper<-function(infiles){
     # extract and insert genotypes
     for(m in 1:length(locusdata)){
         alleleindex<-grep("Allele",names(locusdata[[m]]),value=FALSE)
+        if(forceInteger){
+          for(a in alleleindex){
+            locusdata[[m]][[a]] <- as.integer(locusdata[[m]][[a]])
+          }
+        }
         for(j in 1:length(locusdata[[m]][["Sample.Name"]])){
                 untrimmedgenotype<-locusdata[[m]][j,alleleindex]
                 #Gives an error if there are loci or samples not in the arguments
@@ -478,7 +483,7 @@ read.POPDIST <- function(infiles){
 
 read.STRand <- function(file, sep="\t", popInSam=TRUE){
   # read the spreadsheet into a table
-  mydata <- read.table(file, header=TRUE, sep=sep, stringsAsFactors=FALSE)
+  mydata <- read.table(file, header=TRUE, sep=sep, colClasses="character")
 
   if(!"Pop" %in% names(mydata))
     stop("Need Pop column")

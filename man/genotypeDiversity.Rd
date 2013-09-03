@@ -2,6 +2,7 @@
 \alias{genotypeDiversity}
 \alias{Shannon}
 \alias{Simpson}
+\alias{Simpson.var}
 \title{
 Genotype Diversity Statistics
 }
@@ -23,6 +24,8 @@ genotypeDiversity(genobject, samples = Samples(genobject),
 Shannon(p, base = exp(1))
 
 Simpson(p)
+
+Simpson.var(p)
 }
 \arguments{
   \item{genobject}{
@@ -86,7 +89,17 @@ a vector \eqn{p} of genotype counts, where \eqn{N} is the sum of those counts.
 
 \code{Simpson} calculates the Simpson index, which is:
 
-\deqn{\sum \frac{p_{i}(p_{i} - 1)}{N(N - 1)}}{\sum p_i(p_i - 1)/(N(N - 1))}
+\deqn{\sum \frac{p_{i}(p_{i} - 1)}{N(N - 1)}}{\sum p_i(p_i - 1)/(N(N -1))}
+
+\code{Simpson.var} calculates the variance of the Simpson index:
+
+\deqn{\frac{4N(N-1)(N-2)\sum p_{i}^3 + 2N(N-1)\sum p_{i}^2 -
+    2N(N-1)(2N-3)(\sum p_{i}^2)^2}{[N(N-1)]^2}}
+
+The variance of the Simpson index can be used to calculate a confidence
+interval, for example the results of \code{Simpson} plus or minus twice
+the square root of the results of \code{Simpson.var} would be the 95\%
+confidence interval.
 }
 \value{
 A matrix of diversity index results, with populations in rows and
@@ -106,6 +119,8 @@ Lowe, A., Harris, S. and Ashton, P. (2004) \emph{Ecological Genetics:
 Arnaud-Haond, S., Duarte, M., Alberto, F. and Serrao, E. A.  (2007)
 Standardizing methods to address clonality in population studies.
 \emph{Molecular Ecology} \bold{16}:5115--5139.
+
+\url{http://darwin.phyloviz.net/ComparingPartitions/index.php?link=Tut4}
 }
 \author{
 Lindsay V. Clark
@@ -131,6 +146,7 @@ genotypeDiversity(mydata, d=mydist)
 genotypeDiversity(mydata, d=mydist, base=2)
 genotypeDiversity(mydata, d=mydist, threshold=0.3)
 genotypeDiversity(mydata, d=mydist, index=Simpson)
+genotypeDiversity(mydata, d=mydist, index=Simpson.var)
 }
 \keyword{ arith }
 

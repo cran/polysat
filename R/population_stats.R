@@ -743,6 +743,14 @@ Simpson <- function(p){
     return(sum(p*(p-1)/(N*(N-1))))
 }
 
+Simpson.var <- function(p){
+    N <- sum(p)
+    p <- p/N
+    v <- (4*N*(N-1)*(N-2)*sum(p^3) + 2*N*(N-1)*sum(p^2) -
+            2*N*(N-1)*(2*N-3)*(sum(p^2))^2)/((N*(N-1))^2)
+    return(v)
+}
+
 # ... is passed to index. (So you can adjust base of Shannon index.)
 # threshold is highest distance between two individuals that can be considered
 # to be one clone.

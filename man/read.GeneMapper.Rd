@@ -10,12 +10,19 @@ Read GeneMapper Genotypes Tables
   the genotype data.
 }
 \usage{
-read.GeneMapper(infiles)
+read.GeneMapper(infiles, forceInteger=TRUE)
 }
 \arguments{
   \item{infiles}{
 A character vector of paths to the files to be read.
 }
+\item{forceInteger}{
+  Boolean.  If \code{TRUE}, alleles will be coerced to integers.  This is
+  particularly useful for stripping any white space from allels and
+  preventing alleles from being imported as character strings.  If
+  \code{FALSE}, alleles will be imported as numeric or character values,
+  depending on the content of the input file(s).
+  }
 }
 \details{
 \code{read.GeneMapper} can read the genotypes tables that are exported
@@ -58,6 +65,10 @@ A character vector of paths to the files to be read.
 
   Sample and locus names must be consistent within and across the
   files.  The object that is produced is indexed by these names.
+
+  If \code{forceInteger=FALSE}, alleles can be non-numeric values.  Some
+  functionality of \pkg{polysat} will be lost in this case, but it could
+  allow for the import of SNP data, for example.
 }
 \value{
 A \code{genambig} object containing genotypes from the files, stored as
@@ -72,7 +83,11 @@ Lindsay V. Clark
 }
 \note{
   A \sQuote{subscript out of bounds} error may mean that a sample name
-  or marker was left blank in one of the input files.
+  or marker was left blank in one of the input files.  A \sQuote{NAs
+    introduced by coercion} warning when \code{forceInteger=TRUE} means that a
+  non-numeric, non-whitespace character was included in one of the
+  allele fields of the file(s), in which case the file(s) should be
+  carefully checked and re-imported.
 }
 
 \seealso{
