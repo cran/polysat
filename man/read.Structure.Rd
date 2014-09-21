@@ -13,7 +13,8 @@ columns can optionally be extracted as well.
 \usage{
 read.Structure(infile, ploidy, missingin = -9, sep = "\t",
                markernames = TRUE, labels = TRUE, extrarows = 1,
-               popinfocol = 1, extracols = 1, getexcols = FALSE)
+               popinfocol = 1, extracols = 1, getexcols = FALSE,
+               ploidyoutput="one")
 }
 \arguments{
   \item{infile}{
@@ -57,6 +58,16 @@ Phenotype, or any other extra columns.
 Boolean, indicating whether the function should return the data from any
 extra columns.
 }
+\item{ploidyoutput}{
+  This argument determines what is assigned to the \code{Ploidies} slot
+  of the \code{"genambig"} dataset that is output.  It should be a
+  string, either \code{"one"}, \code{"samplemax"}, or
+  \code{"matrix"}.  This indicates, respectively, that \code{ploidy}
+  should be used as the ploidy of the entire dataset, that the maximum
+  number of alleles for each sample should be used as the ploidy of that
+  sample, or that ploidies should be stored as a matrix of allele counts
+  for each sample*locus.
+  }
 }
 \details{
 The current version of \code{read.Structure} does not support the

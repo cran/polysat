@@ -1,3 +1,44 @@
+Changes in version 1.3-3
+
+Fixed an error that would occor if ploidies were in "ploidymatrix" format but
+there was only one sample or only one locus.  (In the "pld" method for class
+"ploidymatrix".)  Fixing this bug introduced another bug in simpleFreq, which 
+has also been fixed.
+
+Fixed PopInfo replacement method for the "gendata" class so that a warning 
+would not be issued if all values are NA after replacement.
+
+Copied all example files for data import into the "extdata" folder so that 
+they will once again be part of the installation.
+
+Edited the documentation of assignClones to suggest excluding samples with 
+missing data.
+
+Added an error message to the Ploidies<- replacement function if any 
+individuals are being assigned a negative number as a ploidy.  Added a 
+warning to the same function if any individuals are being assigned a ploidy 
+greater than 12.
+
+genotypeProbs is edited to allow for missing genotypes to have a ploidy of zero.
+
+read.Structure and read.STRand have been edited to prevent periods from being
+inserted into loci names.
+
+read.Structure now has several options for assigning ploidy to the output
+dataset.  (1) The ploidy of the file can be used as the ploidy of the entire
+dataset, (2) the maximum number of alleles per sample can be used to assign
+ploidy to each sample, or (3) the ploidies can be output as a matrix of 
+allele counts for each sample*locus genotype, as in versions 1.3-0 through
+1.3-2.
+
+read.STRand documentation has been edited so that the example files produced
+more closely resemble files produced by STRand.
+
+Package "combinat" changed from "Depends" to "Suggests" since it is only needed
+by the Bruvo.distance function.  Package "methods" changed from "Depends" to 
+"Imports".  The functions Bruvo.distance and gendata.to.genind have been 
+modified to have the correct syntax for package dependencies.
+
 Changes in version 1.3-2
 
 read.GeneMapper has been edited to prevent the import of alleles as factors.

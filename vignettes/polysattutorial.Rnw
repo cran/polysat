@@ -61,9 +61,10 @@ R input found in this manual.
 
 \section{Obtaining and installing polysat}
 The R console and base system can be obtained at
-\url{http://www.r-project.org/}.  Once installed, polysat can be
+\url{http://www.r-project.org/}.  Once R is installed, polysat can be
 installed and loaded by typing the following commands into the R
-console:
+console (note that combinat is only needed if the \texttt{Bruvo.distance} 
+function is being used):
 
 \begin{Schunk}
   \begin{Sinput}
@@ -75,7 +76,7 @@ console:
 
 If
 you quit and restart R, you will not have to re-install the package but
-you might need to load it again (using the \texttt{library} function
+you will need to load it again (using the \texttt{library} function
 as shown above).
 
 \section{Workflow overview}
@@ -196,7 +197,7 @@ Flowchart 2.  Functions for autopolyploid data only.
 \label{sec:creatingdataset}
 
 As with any genetic software, the first thing you want to do is import
-your data.  For this tutorial, go into the ``doc'' directory of
+your data.  For this tutorial, go into the ``extdata'' directory of
 the polysat package installation, and find a file called
 ``GeneMapperExample.txt''.  Open this file in a text editor and
 inspect its contents.  This file contains simulated genotypes of 300
@@ -347,7 +348,8 @@ load("vignettebuild/testmat.RData")
 
 <<echo=TRUE, results=hide, fig=TRUE>>=
 pca <- cmdscale(testmat)
-plot(pca[,1], pca[,2], col=rep(c("red", "green", "blue"), each=100),
+mycol <- c("red", "green", "blue")
+plot(pca[,1], pca[,2], col=mycol[PopInfo(simgen)],
      main = "PCA with Bruvo distance")
 @
 
@@ -672,7 +674,8 @@ ploidy can be stored in four formats: a single value if the entire dataset
 has uniform ploidy, a vector indexed by sample if ploidy varies by sample, a 
 vector indexed by locus if ploidy varies by locus (\emph{e.g.} if the species
 is polyploid undergoing diploidization), or a matrix indexed by sample and 
-locus (\emph{e.g} if some of your loci are on sex chromosomes).  The object in
+locus (\emph{e.g} if some of your loci are on sex chromosomes, or if some 
+individuals are aneuploid).  The object in
 the \texttt{Ploidies} slot of the dataset is one of four subclasses of the 
 \texttt{"ploidysuper"} class (see table below), and this in turn has a slot
 called \texttt{pld} that contains the ploidy data.  To make things simple from 
@@ -825,7 +828,7 @@ GenoDive \cite{meirmans04}
 (\url{http://www.bentleydrummer.nl/software/software/GenoDive.html}),
 and POPDIST \cite{guldbrandtsen00}\cite{tomiuk09}.
 
-In the ``doc'' directory of the polysat installation there are
+In the ``extdata'' directory of the polysat installation there are
 files called ``structureExample.txt'', ``spagediExample.txt'',
 ``genodiveExample.txt'', ``POPDISTexample1.txt'' and ``POPDISTexample2.txt''.
 To import these into \texttt{"genambig"}
@@ -842,7 +845,7 @@ PDdata <- read.POPDIST(c("POPDISTexample1.txt", "POPDISTexample2.txt"))
 Use \texttt{summary}, \texttt{viewGenotypes}, and the accessor
 functions (section \ref{sec:genambig}) to examine the contents of the three
 \texttt{"genambig"} objects that you have just created.  All four of
-these functions take population information from the file and put it
+these import functions take population information from the file and put it
 into the object.  The Structure, SPAGeDi, and POPDIST files are coded in a way
 that indicates the ploidy of each individual, so this information is
 written to the \texttt{"genambig"} object as well.
@@ -851,7 +854,8 @@ The data import functions have some additional options for input and
 output, which are described in more detail in the help files.  In particular,
 any extra columns can optionally be extracted from a Structure file,
 and the spatial coordinates can optionally be extracted from a SPAGeDi
-file.
+file.  There are also several options for how ploidy should be interpreted from 
+Structure files.
 
 \begin{Schunk}
 \begin{Sinput}
@@ -899,7 +903,7 @@ PopNames(STRdata)
 A binary presence/absence matrix can be read into R using the base
 function \texttt{read.table}.  Arguments to this function give options
 about how the file is delimited and whether it has headers and/or row labels.
-The example file in the ``doc'' directory can be read in the
+The example file in the ``extdata'' directory can be read in the
 following way:
 
 <<>>=
@@ -1066,8 +1070,8 @@ function \texttt{Bruvo2.distance} has two additional arguments called
 indicate that the models of genome addition and/or genome loss should
 be used, respectively.
 
-A second means of calculating inter-individual distances is provided
-with polysat 1.2 and is called \texttt{meandistance.matrix2}.  Whereas
+A second means of calculating inter-individual distances was introduced in
+polysat 1.2 and is called \texttt{meandistance.matrix2}.  Whereas
 \texttt{meandistance.matrix} passes genotypes directly to
 \texttt{distmetric} with each allele present in only one copy,
 \texttt{meandistance.matrix2} uses ploidy, selfing rate, and allele

@@ -21,3 +21,4 @@ exportMethods(estimatePloidy, Samples, "Samples<-", Loci, "Loci<-", PopInfo,
               merge, pld, "pld<-", plCollapse)
 exportClasses(gendata, genambig, genbinary, ploidysuper, ploidymatrix, 
               ploidylocus, ploidysample, ploidyone)
+import(methods)

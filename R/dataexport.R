@@ -547,7 +547,6 @@ write.POPDIST <- function(object, samples=Samples(object),
 
 gendata.to.genind <- function(object, samples=Samples(object),
                               loci=Loci(object)){
-  require(adegenet)
   # Errors
   if(!is(object, "gendata")) stop("genambig or genbinary object needed.")
   ploidy <- unique(Ploidies(object, samples, loci))
@@ -566,7 +565,7 @@ gendata.to.genind <- function(object, samples=Samples(object),
   dimnames(tab)[[2]] <- gsub(".","-", dimnames(tab)[[2]], fixed=TRUE)
 
   # create genind object
-  x <- genind(tab, pop=PopNames(object)[PopInfo(object)[samples]],
+  x <- adegenet::genind(tab, pop=PopNames(object)[PopInfo(object)[samples]],
               ploidy=ploidy, type="PA")
   return(x)
 }

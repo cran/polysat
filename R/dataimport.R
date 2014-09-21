@@ -98,8 +98,12 @@ read.GenoDive <- function(infile){
 # popinfocol is column number not including labels, or NA
 read.Structure<-function(infile,ploidy,missingin=-9,sep="\t",markernames=TRUE,
                          labels=TRUE, extrarows=1, popinfocol=1, extracols=1,
-                         getexcols=FALSE
+                         getexcols=FALSE, ploidyoutput="one"
                          ){
+    # error checking
+    if(length(ploidyoutput) != 1 ||
+       !ploidyoutput %in% c("one","samplemax","matrix"))
+        stop("ploidy output must be \"one\", \"samplemax\", or \"matrix\".")
     # read the file
     rawdata<-read.table(infile,header=markernames,sep=sep)
     # get an index of samples and a column labeling the samples
@@ -128,6 +132,11 @@ read.Structure<-function(infile,ploidy,missingin=-9,sep="\t",markernames=TRUE,
 
     # set up the object to store genotypes
     object <- new("genambig", samples, loci)
+    # set up ploidy
+    if(ploidyoutput=="one"){
+        object <- reformatPloidies(object, output="one", erase=TRUE)
+        Ploidies(object) <- ploidy
+    }
 
     # fill the genotypes and popinfo
     for(s in samples){
@@ -140,8 +149,10 @@ read.Structure<-function(infile,ploidy,missingin=-9,sep="\t",markernames=TRUE,
             } else {
                 thesealleles<-thesealleles[thesealleles != missingin]
                 # get ploidy
-                Ploidies(object)[s,L] <-
-                   length(rawalleles[rawalleles != missingin])
+                if(ploidyoutput!="one"){
+                    Ploidies(object)[s,L] <-
+                       length(rawalleles[rawalleles != missingin])
+                }
             }
             Genotype(object,s,L)<-thesealleles
         }
@@ -150,7 +161,14 @@ read.Structure<-function(infile,ploidy,missingin=-9,sep="\t",markernames=TRUE,
             PopInfo(object)[s] <- rawdata[match(s, rawdata$Samples),"PopInfo"]
         }
     }
-    object <- reformatPloidies(object, output="collapse", na.rm=TRUE)
+#    object <- reformatPloidies(object, output="collapse", na.rm=TRUE)
+    Loci(object) <- gsub(".", "-", loci, fixed=TRUE)
+    if(ploidyoutput=="samplemax"){
+        maxpl <- apply(Ploidies(object), 1, max, na.rm=TRUE)
+        object <- reformatPloidies(object, output="sample", erase=TRUE)
+        Ploidies(object) <- maxpl
+    }
+
 
     # extract the extra columns, if needed
     if(getexcols){
@@ -511,6 +529,7 @@ read.STRand <- function(file, sep="\t", popInSam=TRUE){
       }
     }
   }
+  Loci(genobject) <- gsub(".", "-", loci, fixed=TRUE)
 
   # return the dataset
   return(genobject)

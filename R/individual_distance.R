@@ -1,5 +1,5 @@
 Bruvo.distance <- function(genotype1, genotype2, maxl=9, usatnt=2, missing=-9) {
-
+    
 if(is.na(usatnt)) stop("Bruvo.distance needs info from Usatnts slot.")
 
 if(identical(genotype1, genotype2)&&genotype1[1]!=missing) {dist <- 0} else {
@@ -38,7 +38,7 @@ combinations <- combn(row, ks, FUN = NULL, simplify=FALSE)
 # all combinations of alleles in genotypeL that can be matched to non-virtual
         # alleles in genotypeS
 
-permutations <- permn(ks)
+permutations <- combinat::permn(ks)
 # all possible orders that alleles within these combinations can go in
 
 mindist <- Inf # this variable will store the minimum sum encountered so far.
@@ -246,6 +246,8 @@ genotypeProbs <- function(object, sample, locus, freq=NULL, gprob=NULL,
 
     # What to do with unambiguous genotypes
     if(length(gen)==1){
+        if(pl==0 && isMissing(object, sample, locus)) pl <- 1
+               # 8/30/14 - above edit is in anticipation of recodeAllopoly
         results <- list(probs=1, genotypes=matrix(rep(gen, pl), nrow=1,
                                  ncol=pl))
     }

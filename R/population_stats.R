@@ -79,7 +79,7 @@ simpleFreq <- function(object, samples=Samples(object), loci=Loci(object)){
         for(s in xsamples){
             numalleles[s] <- sum(Genotype(object, s , L))
         }
-        convf <- Ploidies(object,xsamples,L)/numalleles
+        convf <- as.vector(Ploidies(object,xsamples,L))/numalleles
         # make table of weighted allele presence
         loctable <- Genotypes(object, xsamples, L) * convf
         # loop through all alleles at this locus

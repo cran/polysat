@@ -41,12 +41,18 @@ A number indicating the maximum distance between two individuals that
   that GenoType requires that
 distances be integers rather than decimals, so you will have to
 multiply the distances produced by \pkg{polysat} by a large number and
-round them to the nearest integer if you wish to export them to Genotype.
+round them to the nearest integer if you wish to export them to GenoType.
 When comparing the
 results of \code{assignClones} and GenoType using my own data, the only
 differences I have seen have been the result of rounding; a decimal that
 was slightly above the threshold in when analyzed in R was rounded down
 to the threshold when analyzed in GenoType.
+
+Note that when using a distance threshold of zero (the default), it is
+advisable to exclude all samples with missing data, in order to prevent
+the merging of non-identical clones.  At higher thresholds, some missing
+data are allowable, but samples that have missing data at many loci should
+be excluded.
 
 The \code{write.table} function can be used for exporting the results to
 GenoDive.  See the R documentation for information on how to

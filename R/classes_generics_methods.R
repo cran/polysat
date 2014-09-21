@@ -90,7 +90,7 @@ setMethod("pld", signature(object = "ploidymatrix"),
           function(object,samples,loci){
             if(missing(samples)) samples <- dimnames(object@pld)[[1]]
             if(missing(loci)) loci <- dimnames(object@pld)[[2]]
-            return(object@pld[samples,loci])
+            return(object@pld[samples,loci, drop=FALSE])
           })
 setMethod("pld", signature(object = "ploidysample"),
           function(object,samples,loci){
@@ -583,7 +583,8 @@ setReplaceMethod("PopInfo", "gendata", function(object, value){
     # add values to PopInfo slot
     object@PopInfo[names(object@PopInfo)] <- as.integer(value)
     # make sure there are enough PopNames
-    if(length(object@PopNames) < max(object@PopInfo, na.rm=TRUE)){
+    if(!all(is.na(object@PopInfo)) &&
+        length(object@PopNames) < max(object@PopInfo, na.rm=TRUE)){
         missingnames <- (length(object@PopNames) + 1):max(object@PopInfo,
                                                           na.rm=TRUE)
         object@PopNames[missingnames] <- paste("Pop", missingnames,sep="")
@@ -606,6 +607,10 @@ setMethod("Ploidies", signature(object = "gendata", samples="ANY", loci="ANY"),
             return(pld(object@Ploidies, samples=samples, loci=loci))
             })
 setReplaceMethod("Ploidies", "gendata", function(object, value){
+    if(!all(is.na(as.integer(value)) | as.integer(value) >= 0))
+        stop("Ploidy less than zero not allowed.")
+    if(!all(is.na(as.integer(value)) | as.integer(value) <= 12))
+        warning("Large ploidies (>12) detected.")
     pld(object@Ploidies) <- value
     object
 })
