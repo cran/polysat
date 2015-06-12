@@ -64,6 +64,8 @@ A file is written but no value is returned.
 }
 \references{
   \url{http://www.appliedbiosystems.com/genemapper}
+% Note that this URL redirects to a different page depending on the user's
+% location.  Causes libcurl error code 52 in R CMD check.
 }
 \author{
 Lindsay V. Clark

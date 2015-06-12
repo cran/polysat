@@ -26,6 +26,12 @@ read.GeneMapper<-function(infiles, forceInteger=TRUE){
             locusdata[[m]][[a]] <- as.integer(locusdata[[m]][[a]])
           }
         }
+        if(any(is.na(locusdata[[m]][[alleleindex[1]]]))){
+            stop("Rows with missing data should be deleted or have -9 in the first allele slot.")
+        }
+        if(any(locusdata[[m]][,alleleindex[-1]] == -9, na.rm=TRUE)){
+            stop("Only the first allele column should have -9 values; use blank space or NA in remaining columns.")
+        }
         for(j in 1:length(locusdata[[m]][["Sample.Name"]])){
                 untrimmedgenotype<-locusdata[[m]][j,alleleindex]
                 #Gives an error if there are loci or samples not in the arguments

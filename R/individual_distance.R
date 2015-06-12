@@ -92,6 +92,8 @@ meandistance.matrix <- function(object, samples=Samples(object),
                                  loci=Loci(object), all.distances=FALSE,
                                  distmetric=Bruvo.distance,
                                 progress=TRUE, ...){
+    # error if not a genambig object
+    if(!is(object, "genambig")) stop("\"genambig\" object needed.")
     # subset the object so that samples can be numbered
     object <- object[samples, loci]
 
@@ -114,13 +116,7 @@ meandistance.matrix <- function(object, samples=Samples(object),
     }
 
     # calculate the mean matrix across all loci
-    mean.matrix<-matrix(nrow=length(samples),ncol=length(samples),
-                        dimnames=list(samples,samples))
-    for(j in samples){
-        for(k in samples){
-            mean.matrix[j,k]<-mean(loci.matrices[,j,k][!is.na(loci.matrices[,j,k])])
-        }
-    }
+    mean.matrix <- meandist.from.array(loci.matrices)
 
     # return either the mean matrix and possibly the array as well
     if(all.distances){
@@ -134,23 +130,19 @@ meandist.from.array<-function(distarray, samples=dimnames(distarray)[[2]],
                               loci=dimnames(distarray)[[1]]){
     # get the array to be averaged
     subarray<-distarray[loci,samples,samples]
-    # make a matrix to put the means into
-    mean.matrix<-matrix(nrow=length(samples),ncol=length(samples),
-                        dimnames=list(samples,samples))
-    for(j in samples){
-        for(k in samples){
-            mean.matrix[j,k]<-mean(subarray[,j,k][!is.na(subarray[,j,k])])
-        }
-    }
+    # calculate means
+    mean.matrix <- colMeans(subarray, na.rm=TRUE)
     return(mean.matrix)
 }
 
 find.na.dist<-function(distarray, samples=dimnames(distarray)[[2]],
                               loci=dimnames(distarray)[[1]]){
+    # number of missing distances
+    nmissing <- sum(is.na(distarray[loci, samples, samples]))
     # set up vectors for data frame to contain info on where missing data is
-    Locus<-""
-    Sample1<-""
-    Sample2<-""
+    Locus <- character(nmissing)
+    Sample1 <- character(nmissing)
+    Sample2 <- character(nmissing)
     # current row in the data frame
     currrow<-1
     # go through the array, find NA, and put the index into the data frame
@@ -443,13 +435,7 @@ meandistance.matrix2 <- function(object, samples=Samples(object),
     }
 
     # calculate the mean matrix across all loci
-    mean.matrix<-matrix(nrow=length(samples),ncol=length(samples),
-                        dimnames=list(samples,samples))
-    for(j in samples){
-        for(k in samples){
-       mean.matrix[j,k]<-mean(loci.matrices[,j,k], na.rm=TRUE)
-        }
-    }
+    mean.matrix <- meandist.from.array(loci.matrices)
 
     # return either the mean matrix and possibly the array as well
     if(all.distances){

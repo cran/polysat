@@ -10,7 +10,8 @@ export(Bruvo.distance,
        read.POPDIST, write.POPDIST, freq.to.genpop, genotypeProbs,
        meandistance.matrix2, assignClones, Shannon, Simpson, genotypeDiversity,
        Bruvo2.distance, reformatPloidies,alleleDiversity,read.STRand,
-gendata.to.genind, Simpson.var)
+gendata.to.genind, Simpson.var, simAllopoly, catalanAlleles, alleleCorrelations,
+       testAlGroups, mergeAlleleAssignments, recodeAllopoly)
 exportMethods(estimatePloidy, Samples, "Samples<-", Loci, "Loci<-", PopInfo,
               "PopInfo<-", PopNames, "PopNames<-", Ploidies, "Ploidies<-",
               Usatnts,

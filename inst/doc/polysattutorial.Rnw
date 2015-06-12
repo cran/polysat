@@ -1,4 +1,4 @@
-% \VignetteIndexEntry{polysat version 1.3 Tutorial Manual}
+% \VignetteIndexEntry{polysat version 1.4 Tutorial Manual}
 % \VignetteDepends{combinat, methods, polysat}
 
 \documentclass[12pt]{article}
@@ -9,7 +9,7 @@
 \usepackage{array}
 \usepackage{hyperref}
 
-\title{polysat version 1.3 Tutorial Manual}
+\title{\textsc{polysat} version 1.4 Tutorial Manual}
 \author{Lindsay V. Clark <lvclark@illinois.edu>\\
   University of Illinois, Urbana-Champaign\\
   Department of Crop Sciences\\
@@ -17,6 +17,7 @@
 \date{\today}
 
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 
 \maketitle
 
@@ -28,7 +29,7 @@ options(width=60)
 @
 
 \section{Introduction}
-The R package \texttt{polysat} provides useful tools for
+The R package \textsc{polysat} provides useful tools for
 working with microsatellite data of any ploidy level, including
 populations of mixed ploidy.  It can convert genotype data between
 different formats, including Applied Biosystems GeneMapper\textregistered,
@@ -59,9 +60,9 @@ them and think about the purpose of each line of code.  A file called
 installation can be opened with a text editor and contains all of the
 R input found in this manual.
 
-\section{Obtaining and installing polysat}
+\section{Obtaining and installing \mdseries\textsc{polysat}}
 The R console and base system can be obtained at
-\url{http://www.r-project.org/}.  Once R is installed, polysat can be
+\url{http://www.r-project.org/}.  Once R is installed, \textsc{polysat} can be
 installed and loaded by typing the following commands into the R
 console (note that combinat is only needed if the \texttt{Bruvo.distance} 
 function is being used):
@@ -83,7 +84,7 @@ as shown above).
 
 The flowcharts on the next two pages give an overview of the
 steps required for the most common analyses performed in
-\texttt{polysat}.  The first steps will always be importing or
+\textsc{polysat}.  The first steps will always be importing or
 inputing the genotype data and making sure that the dataset contains
 information about populations and microsatellite repeat lengths.
 Different analysis and export functions are then available depending
@@ -126,7 +127,11 @@ or \texttt{genotypeDiversity}};
 %  related functions to determine reproductive mode.};
 \node at (8.5, -10.5) [decision] (allo) {Is organism allopolyploid?};
 \node at (11, -14) [block] (isauto) {See Flowchart 2.};
-\node at (0, -15.5) [block] (alloexport) {Export tetraploid data to
+\node at (7, -13) [cloud] (isallo) {};
+\node at (6, -15.5) [block] (convallo) {Use \texttt{alleleCorrelations},
+\texttt{testAlGroups}, and \texttt{recodeAllopoly} functions to recode
+the dataset as diploid or polysomic.};
+\node at (1.6, -15.5) [block] (alloexport) {Export tetraploid data to
   ATetra, Tetra, or Tetrasat software.};
 
 \path [line] (import) |- (summary);
@@ -145,7 +150,10 @@ or \texttt{genotypeDiversity}};
 % \path [line] (plfilled) -- (mating);
 \path [line] (plfilled) -- (allo);
 \path [line] (allo) -- node[above] {no} (isauto);
-\path [line] (allo) |- node[below] {yes} (alloexport);
+\path [line] (allo) -- node[below] {yes} (isallo);
+\path [line] (isallo) -| (alloexport);
+\path [line] (isallo) -- (convallo);
+\path [line] (convallo) -- (isauto);
 
 \end{tikzpicture}
 
@@ -189,7 +197,7 @@ or \texttt{genotypeDiversity}};
 \path [line] (calcfst) |- (analysis);
 \end{tikzpicture}
 
-Flowchart 2.  Functions for autopolyploid data only.
+Flowchart 2. Functions for polysomic or diploid data only.
 \fontsize{12}{15}
 
 \section{Getting Started: A Tutorial}
@@ -386,7 +394,7 @@ ploidy are known, also see \texttt{?Bruvo2.distance}.
 \subsubsection{Working with subsets of the data}
 It is likely that you will want to perform some analyses on just a
 subset of your data.  There are several ways to accomplish this in
-polysat.  The \texttt{deleteSamples} and \texttt{deleteLoci} functions
+\textsc{polysat}.  The \texttt{deleteSamples} and \texttt{deleteLoci} functions
 are designed to be fairly intuitive.
 
 <<echo=TRUE>>=
@@ -504,7 +512,7 @@ write.Structure(simgen, ploidy = 4, file="simgenStruct.txt")
 @
 
 
-\section{How data are stored in polysat}
+\section{How data are stored in \mdseries\textsc{polysat}}
 
 In the tutorial above, you learned some ways of creating, viewing, and
 editing a dataset in polysat.  This section goes into more details of
@@ -512,7 +520,7 @@ the underlying data structure in polysat.  This is particularly useful
 to understand if you want to extend the functionality of the package,
 but it may clear up some confusion for basic polysat users as well.
 
-polysat uses the S4 class system in R.  ``Class'' and ``object'' are
+\textsc{polysat} uses the S4 class system in R.  ``Class'' and ``object'' are
 two computer science terms that are introduced in Section 3 of
 \emph{An Introduction to R}.  Whenever you create a vector, data frame,
 matrix, list, etc. you are creating an object, and the class of the
@@ -702,7 +710,7 @@ make sure that random segregation is actually the case for all loci.  (See
 sections on working with autopolyploid vs. allopolyploid data.)  For example,
 if a locus is present on two homeologous chromosome pairs, you may record the
 ploidy for that locus as being four.  However, since these chromosomes do not
-pair with each other at meiosis, many of the analyses in polysat that utilize
+pair with each other at meiosis, many of the analyses in \textsc{polysat} that utilize
 ploidy do not apply.
 
 Many of the data import functions for polysat will detect the ploidies of 
@@ -788,13 +796,13 @@ genotype data formatted in a binary presence/absence format, for example:
 write.table(Genotypes(simgenB), file="simBinaryData.txt")
 @
 
-The \texttt{"genbinary"} class is also used by \texttt{polysat} to
+The \texttt{"genbinary"} class is also used by \textsc{polysat} to
 make some of the allele frequency calculations easier.
 \texttt{simpleFreq} internally converts a \texttt{"genambig"}
 object to a \texttt{"genbinary"} object in order to tally allele
 counts in populations.
 
-The class system in polysat is set up so that anyone can extend
+The class system in \textsc{polysat} is set up so that anyone can extend
 it to better suit their needs.  There seem to be as many ways
 of formatting genotype data as their are population genetic software,
 and so a new subclass of \texttt{"gendata"} could be created with
@@ -805,9 +813,10 @@ phenotypic data in addition to the data already stored in a
 \texttt{?setMethod}, and \cite{chambers08}.)
 
 \section{Functions for autopolyploid data}
-In order to properly utilize polysat (and other software for polyploid
+In order to properly utilize \textsc{polysat} (and other software for polyploid
 data) it is important to understand the inheritance mode in your
-system.  In an autopolyploid, all homologous chromosomes are equally
+system.  In an autopolyploid (excluding ancient autopolyploids that have
+undergone diploidization), all homologous chromosomes are equally
 capable of pairing with each other at meiosis, and thus at a given
 microsatellite locus, gametes can receive any combination of alleles
 from the parent.  The same is not true of allopolyploids.  This
@@ -816,7 +825,9 @@ result affects all aspects of population genetic analysis.
 
 The functions described below are specifically for autopolyploid
 data.  Their potential (or lack thereof) for use on allopolyploid data
-is described in the next section.
+is described in the next section.  If you have data from an allopolyploid or 
+diploidized autopolyploid organism, you may also want to see the vignette
+``Assigning alleles to isoloci in \textsc{polysat}''.
 
 \subsection{Data import }
 \label{sec:autoimport}
@@ -828,7 +839,7 @@ GenoDive \cite{meirmans04}
 (\url{http://www.bentleydrummer.nl/software/software/GenoDive.html}),
 and POPDIST \cite{guldbrandtsen00}\cite{tomiuk09}.
 
-In the ``extdata'' directory of the polysat installation there are
+In the ``extdata'' directory of the \textsc{polysat} installation there are
 files called ``structureExample.txt'', ``spagediExample.txt'',
 ``genodiveExample.txt'', ``POPDISTexample1.txt'' and ``POPDISTexample2.txt''.
 To import these into \texttt{"genambig"}
@@ -864,7 +875,7 @@ Structure files.
 \end{Sinput}
 \end{Schunk}
 
-polysat also supports three genotype formats that work for either
+\textsc{polysat} also supports three genotype formats that work for either
 autopolyploids or allopolyploids, but do not contain any population,
 ploidy, or other information: GeneMapper, STRand, and binary
 presence/absence.  The tutorial in the beginning of this manual uses
@@ -888,7 +899,7 @@ GMdata <- read.GeneMapper(c("GeneMapperCBA15.txt",
 \texttt{read.STRand} takes a slightly modified version of the BTH format 
 output by the allele-calling software STRand \cite{toonen01}.  Since this 
 format uses one row 
-per individual, the modified format for \texttt{polysat} includes a column to
+per individual, the modified format for \textsc{polysat} includes a column to
 contain population information.
 
 <<>>=
@@ -924,7 +935,7 @@ PAdata <- new("genbinary", samples=c("ind1", "ind2", "ind3"),
 Genotypes(PAdata) <- domdata
 @
 
-A few functions in polysat will work directly on a
+A few functions in \textsc{polysat} will work directly on a
 \texttt{"genbinary"} object, but for most functions you will want to convert
 to a \texttt{"genambig"} object.  Addition of population and
 other information can be done either before or after the conversion.
@@ -993,7 +1004,7 @@ write.SPAGeDi(simgen, file="simgenSpag.txt")
 
 If you are using SPAGeDi to calculate relationship and kinship
 coefficients, also see the function \texttt{write.freq.SPAGeDi} for
-exporting allele frequencies from polysat to SPAGeDi for use in these
+exporting allele frequencies from \textsc{polysat} to SPAGeDi for use in these
 calculations.
 
 The \texttt{write.POPDIST} function does not have any options for
@@ -1049,7 +1060,7 @@ A matrix of pairwise distances between individuals can be generated
 using the \texttt{meandistance.matrix} function, which was
 demonstrated in section \ref{sec:gsinddist}.  The most important
 argument is \texttt{distmetric}, or the distance measure that is
-used.  The three options that are provided with polysat are
+used.  The three options that are provided with \textsc{polysat} are
 \texttt{Bruvo.distance} and \texttt{Bruvo2.distance}, which take
 mutational distance between alleles into account
 \cite{bruvo04}, and \texttt{Lynch.distance}, which is a simple
@@ -1071,7 +1082,7 @@ indicate that the models of genome addition and/or genome loss should
 be used, respectively.
 
 A second means of calculating inter-individual distances was introduced in
-polysat 1.2 and is called \texttt{meandistance.matrix2}.  Whereas
+\textsc{polysat} 1.2 and is called \texttt{meandistance.matrix2}.  Whereas
 \texttt{meandistance.matrix} passes genotypes directly to
 \texttt{distmetric} with each allele present in only one copy,
 \texttt{meandistance.matrix2} uses ploidy, selfing rate, and allele
@@ -1153,7 +1164,7 @@ Differences between plots reflect the effects of excluding loci.
 \subsubsection{Determining groups of asexually-related samples}
 \label{sec:assignclones}
 
-Very similarly to the software GenoType \cite{meirmans04}, polysat can use a
+Very similarly to the software GenoType \cite{meirmans04}, \textsc{polysat} can use a
 matrix of inter-individual distances to assign samples to groups of
 asexually-related individuals.  This analysis can be performed on any
 matrix of distances calculated with \texttt{meandistance.matrix},
@@ -1184,7 +1195,7 @@ see section \ref{sec:genofreq}.
 \subsubsection{Allele diversity and frequencies}
 \label{sec:allelefreq}
 Allele diversity, \emph{i.e.} the number of alleles found at each locus, is
-easily calculated in polysat.
+easily calculated in \textsc{polysat}.
 
 <<>>=
 simal <- alleleDiversity(simgen)
@@ -1192,7 +1203,7 @@ simal$counts
 simal$alleles[["PopA","loc1"]]
 @ 
 
-There are two functions in polysat for estimating allele
+There are two functions in \textsc{polysat} for estimating allele
 frequencies.  If all of your individuals are the same, even-numbered
 ploidy and if you have a reasonable estimate of the selfing rate in
 your system, \texttt{deSilvaFreq} will give the most accurate
@@ -1253,7 +1264,7 @@ The R package \texttt{adegenet}\cite{jombart08} can perform a number of
 calculations
 from allele frequencies, including five inter-population distance
 measures as well as Correspondance Analysis.  The allele frequency
-tables produced by \texttt{polysat} can be converted to a format that
+tables produced by \textsc{polysat} can be converted to a format that
 can be read by \texttt{adegenet}.
 
 <<>>=
@@ -1269,7 +1280,7 @@ to the function \texttt{genpop} as the \texttt{tab} argument.  See
 For asexual organisms, you many want to calculate statistics based on
 the frequencies of genotypes in your populations.  Two popular
 statistics for this, the Shannon index \cite{shannon48} and Simpson index
-\cite{simpson49}, are provided with polysat.  The function
+\cite{simpson49}, are provided with \textsc{polysat}.  The function
 \texttt{genotypeDiversity} calculates either of these statistics or any
 user-defined statistic that can be calculated from a vector of
 counts.  \texttt{genotypeDiversity} uses the function
@@ -1326,16 +1337,19 @@ to which genomes, when importing your data you can code each
 microsatellite marker as multiple loci.  As long as each ``locus'' in
 the \texttt{"genambig"} object is behaving according to random
 segregation, the analysis and export functions for autopolyploid data
-described in the previous section are appropriate.
+described in the previous section are appropriate.  See the separate
+vignette ``Assigning alleles to isoloci in \textsc{polysat}'' to learn
+more about how to determine which alleles belong to which genomes.
 
-Otherwise, the following functionality is available for allopolyploids
-in polysat:
+If you are not able split microsatellite markers into independently-segregating
+isoloci, the following functionality is available for allopolyploids
+in \textsc{polysat}:
 
 \subsection{Data import and export}
 \label{sec:alloexport}
 Data can be formatted for the software Tetrasat \cite{markwith06},
 Tetra \cite{liao08}, and ATetra \cite{vanpuyvelde10}
-using polysat.  These programs are intended to be robust to lack of knowledge 
+using \textsc{polysat}.  These programs are intended to be robust to lack of knowledge 
 of inheritance patterns of alleles in allotetraploids and will estimate allele
 frequencies and other statistics.  See the help files for
 \texttt{write.Tetrasat} and \texttt{write.ATetra}.
@@ -1460,11 +1474,19 @@ character is used to delimit fields, whether row and column names
 should be written to the file, and whether quotation marks should be
 used for character strings.
 
-\section{How to cite polysat}
+\section{How to cite \mdseries\textsc{polysat}}
 
-Clark, LV and Jasieniuk, M.  {\sc polysat}: an R package for polyploid
+\begin{itemize}
+
+\item Clark, LV and Jasieniuk, M.  2011.  {\sc polysat}: an R package for polyploid
 microsatellite analysis.  \emph{Molecular Ecology Resources}
 11(3):562--566.
+
+\item Clark, LV and Drauch Schreier, A. 2015.  Resolving microsatellite genotype
+ambiguity in populations of allopolyploid and diploidized autopolyploid organisms
+using negative correlations between alleles.  \emph{BioRxiv}.  DOI: 10.1101/020610
+
+\end{itemize}
 
 Feel free to email me at lvclark@illinois.edu with any questions,
 comments, or bug reports!
