@@ -50,6 +50,8 @@ Lindsay V. Clark
 \code{\link{freq.to.genpop}}
 }
 \examples{
+require(adegenet)
+
 # create a "genambig" object
 mydata <- new("genambig", samples=c("a","b","c","d"), loci=c("e","f"))
 PopNames(mydata) <- c("G","H")
@@ -64,10 +66,10 @@ Genotypes(mydata, loci="f") <- list(c(200,202,204),Missing(mydata),
 # convert to "genind"
 mydata2 <- gendata.to.genind(mydata)
 mydata2@tab
-mydata2@loc.names
-mydata2@ind.names
-mydata2@pop.names
-mydata2@pop
+locNames(mydata2)
+indNames(mydata2)
+popNames(mydata2)
+pop(mydata2)
 }
 \keyword{ manip }
 

@@ -23,3 +23,5 @@ exportMethods(estimatePloidy, Samples, "Samples<-", Loci, "Loci<-", PopInfo,
 exportClasses(gendata, genambig, genbinary, ploidysuper, ploidymatrix, 
               ploidylocus, ploidysample, ploidyone)
 import(methods)
+importFrom("stats", "as.dist", "cutree", "fisher.test", "hclust", "kmeans")
+importFrom("utils", "combn", "edit", "read.table", "stack", "write.table")

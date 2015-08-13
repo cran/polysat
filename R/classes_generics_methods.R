@@ -258,6 +258,14 @@ setClass("gendata", representation(Description="character", Missing="ANY",
                           "PopInfo contains integers that don't index PopNames."
                               )
 
+             # check to see that all sample and locus names are unique
+             if(length(unique(names(object@PopInfo))) < length(object@PopInfo)){
+                 failures <- c(failures, "Not all sample names are unique.")
+             }
+             if(length(unique(names(object@Usatnts))) < length(object@Usatnts)){
+                 failures <- c(failures, "Not all locus names are unique.")
+             }
+
              # return TRUE or failures
              if(length(failures) == 0){
                  return(TRUE)
@@ -273,6 +281,12 @@ setClass("gendata", representation(Description="character", Missing="ANY",
 setClass("genambig", representation(Genotypes="array"), contains="gendata",
           validity = function(object){
     failures <- character(0)
+
+    # do validity testing from gendata
+    gendatatest <- getValidity(getClassDef("gendata"))(object)
+    if(!identical(TRUE, gendatatest)){
+        failures <- c(failures, gendatatest)
+    }
 
     # check to see that the Genotypes list is two-dimensional
     if(length(dim(object@Genotypes)) != 2)
@@ -332,6 +346,12 @@ setClass("genbinary", representation(Genotypes = "matrix", Present = "ANY",
          prototype(Present = as.integer(1), Absent = as.integer(0)),
          validity = function(object){
              failures <- character(0)
+
+             # do validity testing from gendata
+             gendatatest <- getValidity(getClassDef("gendata"))(object)
+             if(!identical(TRUE, gendatatest)){
+                 failures <- c(failures, gendatatest)
+             }
 
              # check that there is only one element for Present and Absent
              if(length(object@Present)!=1) failures <- c(failures,
@@ -474,7 +494,7 @@ setMethod("Samples", signature(object = "gendata", populations = "character",
               })
 # Population names and ploidies
 setMethod("Samples", signature(object = "gendata", populations = "character",
-                               ploidies = "numeric"),     
+                               ploidies = "numeric"),
           function(object, populations, ploidies){
             if(!is(object@Ploidies,"ploidysample"))
         stop("Ploidies argument only valid if ploidies in dataset are indexed by sample.")
@@ -497,7 +517,7 @@ setMethod("Samples", signature(object = "gendata", populations = "numeric",
           function(object, populations, ploidies){
             if(!is(object@Ploidies,"ploidysample"))
         stop("Ploidies argument only valid if ploidies in dataset are indexed by sample.")
-            
+
               ploidies <- as.integer(ploidies)
               populations <- as.integer(populations)
               popsam <- names(object@PopInfo)[object@PopInfo %in% populations]
@@ -510,18 +530,22 @@ setMethod("Samples", signature(object = "gendata", populations = "missing",
           function(object, ploidies){
             if(!is(object@Ploidies,"ploidysample"))
         stop("Ploidies argument only valid if ploidies in dataset are indexed by sample.")
-            
+
             ploidies <- as.integer(ploidies)
             return(names(pld(object@Ploidies))[pld(object@Ploidies) %in% ploidies])
               })
 
 ##                     Replacement method for sample names                   ##
 setReplaceMethod("Samples", "gendata", function(object, value){
+    # check that all sample names are unique
+    if(length(unique(value)) < length(value)){
+        stop("Not all sample names are unique")
+    }
   if(is(object@Ploidies,"ploidysample"))
     names(object@Ploidies@pld) <- value
   if(is(object@Ploidies,"ploidymatrix"))
     dimnames(object@Ploidies@pld)[[1]] <- value
-  names(object@PopInfo) <- value  
+  names(object@PopInfo) <- value
   object
 })
 
@@ -565,6 +589,10 @@ setMethod("Loci", signature(object = "gendata", usatnts = "numeric", ploidies="n
 
 ## Replacement method for locus names
 setReplaceMethod("Loci", "gendata", function(object, value){
+    # check that all locus names are unique
+    if(length(unique(value)) < length(value)){
+        stop("Not all locus names are unique")
+    }
   # Replace Ploidies names if necessary
   if(is(object@Ploidies,"ploidylocus"))
     names(object@Ploidies@pld) <- value
@@ -617,7 +645,7 @@ setReplaceMethod("Ploidies", "gendata", function(object, value){
 # Function to change the ploidy format between the four types
 reformatPloidies <- function(object, output="collapse", na.rm=FALSE,
                              erase=FALSE){
-  
+
   if(!output %in% c("matrix", "sample", "locus", "one", "collapse"))
     stop("Unrecognized output argument.  See reformatPloidies documentation.")
 
@@ -641,7 +669,7 @@ reformatPloidies <- function(object, output="collapse", na.rm=FALSE,
           pl2 <- new(paste("ploidy",output,sep=""),
                      samples=Samples(object),
                      loci=Loci(object))
-          pld(pl2) <- pld(pl) 
+          pld(pl2) <- pld(pl)
           object@Ploidies <- pl2
         } else {
           stop("Ploidies not collapsible to desired format.")
@@ -817,7 +845,7 @@ setMethod("merge", signature(x="gendata", y="gendata"),
             # error if ploidies are not in the same format
             if(!identical(class(x@Ploidies),class(y@Ploidies)))
               stop("x and y must have Ploidies in the same format.")
-            
+
               # set up new gendata object if this wasn't called from the method
               # of a subclass.
               if(missing(objectm)){

@@ -78,7 +78,7 @@ mygenpop <- genpop(gpfreq, ploidy=as.integer(4), type="codom")
 
 # examine the object that has been created
 mygenpop
-mygenpop@pop.names
+popNames(mygenpop)
 mygenpop@tab
 mygenpop@all.names
 
