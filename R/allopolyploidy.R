@@ -57,7 +57,7 @@ simAllopoly <- function(ploidy=c(2,2),
             freq[[i]] <- temp/sum(temp)
         }
     }
-    
+
     # errors
     if(!is.list(alleles) || !is.list(freq))
         stop("alleles and freq must each be a list of vectors")
@@ -186,7 +186,7 @@ alleleCorrelations <- function(object, samples=Samples(object), locus=1,
     }
     # make a second copy of assignment matrix for UPGMA
     clustmat2 <- clustmat1
-    
+
     ### how the function will normally work (all alleles variable): ###
     if(sum(rowSums(clustmat1)==0)>1){
 
@@ -260,11 +260,11 @@ alleleCorrelations <- function(object, samples=Samples(object), locus=1,
     myclust1 <- kres$cluster
         mytotss <- kres$totss
         mybss <- kres$betweenss
-        
-    # UPGMA clustering    
+
+    # UPGMA clustering
         myclust2 <- cutree(hclust(as.dist(mydist), method="average"),
                            k = n.subgen.adj)
-    
+
     # put clusters into matrix
     for(i in (n.subgen - n.subgen.adj + 1):n.subgen){
         clustmat1[i,alleles[myclust1==(i - n.subgen + n.subgen.adj)]] <- 1
@@ -420,7 +420,7 @@ testAlGroups <- function(object, fisherResults, SGploidy=2,
         num.error <- 0 # number of genotypes with scoring or meiotic error
         for(s in Samples(genobject)){
             gen <- as.character(Genotype(genobject, s, L)) # the genotype
- 
+
             # get 1/0 matrix for presence of these alleles in subgenomes
             subG <- G[,gen, drop=FALSE]
             # Start checking the genotype.
@@ -454,7 +454,7 @@ testAlGroups <- function(object, fisherResults, SGploidy=2,
                 }
             }
         } # end of Samples loop
-        
+
         # calculate the proportion inconsistent with allele assignments
         prop.error <- num.error/nind
 
@@ -562,7 +562,7 @@ catalanAlleles <- function(object, samples=Samples(object), locus=1,
         result <- list(locus=Loci(object), SGploidy=SGploidy,
     assignments="Homoplasy or null alleles: some genotypes have too few alleles")
     } else {
-        # set up results matrix 
+        # set up results matrix
         alleles <- .unal1loc(object, Samples(object), locus)
         G <- matrix(0, nrow=n.subgen, ncol=length(alleles),
                     dimnames=list(NULL, as.character(alleles)))
@@ -581,7 +581,7 @@ catalanAlleles <- function(object, samples=Samples(object), locus=1,
             Xrank <- sapply(X, function(x) sum(AlFreqInX[as.character(x)]))
             # sort genotypes, putting the most interconnected first
             X <- X[order(Xrank, decreasing=TRUE)]
-            
+
             # use the first one
             gen <- as.character(X[[1]])
             for(i in 1:n.subgen){
@@ -589,7 +589,7 @@ catalanAlleles <- function(object, samples=Samples(object), locus=1,
             }
             ToAssign <- alleles[colSums(G)==0] # alleles to assign
             Xa <- X[sapply(X, function(x) sum(ToAssign %in% x)==1)]
-            
+
             # try using the rest of the genotypes with n.subgen alleles
              while(length(Xa)>0){
                  gen <- as.character(Xa[[1]])
@@ -618,7 +618,7 @@ catalanAlleles <- function(object, samples=Samples(object), locus=1,
                     thissubgen <- rowSums(g) == min(rowSums(g))
                     thisallele <- dimnames(g)[[2]][colSums(g)==0]
                     G[thissubgen,thisallele] <- 1
-                    
+
                     # update list of unassigned alleles and useful genotypes
                     ToAssign <- alleles[colSums(G)==0]
                     Xa <- X[sapply(X, function(x) (sum(ToAssign %in% x)==1 &&
@@ -742,7 +742,7 @@ mergeAlleleAssignments <- function(x){
                     toremove <- c(toremove,i) # done with this matrix
                 }
                 # get rid of matrices that have already been used
-                if(length(toremove)>0) A <- A[-toremove] 
+                if(length(toremove)>0) A <- A[-toremove]
             }
         }
         results[[L]] <- list(locus=locus, SGploidy=thisSGp,
@@ -750,6 +750,289 @@ mergeAlleleAssignments <- function(x){
     }
     return(results)
 }
+
+# function to plot results of K-means clustering, to get a sense of clustering quality.
+# takes 2D array of results of AlleleCorrelations; locus x population
+plotSSAllo <- function(AlCorrArray){
+  loci <- dimnames(AlCorrArray)[[1]] # locus names
+  pops <- dimnames(AlCorrArray)[[2]] # population names
+  n.subgen <- dim(AlCorrArray[[1,1]]$Kmeans.groups)[1] # number of isoloci
+  
+  # get array of sums of squares ratios, to evaluate clustering qualities
+  SSarray <- array(sapply(AlCorrArray, FUN = function(x) x$betweenss/x$totss), dim = dim(AlCorrArray),
+                   dimnames = list(loci, pops))
+  SSarray[is.na(SSarray)] <- 0
+  # get array of index of evenness of distribution of alleles among isoloci
+  Earray <- array(sapply(AlCorrArray, FUN = function(x){
+    propAl <- rowMeans(x$Kmeans.groups) # proportion of alleles belonging to each isolocus
+    return(1 - sum(propAl^2))
+  }), dim = dim(AlCorrArray), dimnames = list(loci, pops))
+  
+  # identify loci with positive allele correlations
+  posCor <- sapply(AlCorrArray, FUN = function(x) any(x$significant.pos, na.rm = TRUE))
+  posCor <- array(posCor, dim = dim(AlCorrArray), dimnames = list(loci, pops))
+  
+  # colors for populations
+  if(length(pops) == 1){  # black and white if one pop
+    popCol = "black"
+    bgCol = "white"
+  } else {                # colors for multiple pops, with grey background for visibility
+    bgCol = "lightgrey"
+    if(length(pops) == 2){
+      popCol = c("red", "blue")
+    } else {
+      popCol = rainbow(length(pops))
+    }
+  }
+  
+  # set background color
+  oldBg = par()$bg
+  par(bg = bgCol)
+  
+  # determine plot range
+  maxE <- 1 - n.subgen * 1/n.subgen^2 # maximum evenness
+  # maximum number of alleles
+  maxNalleles <- max(sapply(AlCorrArray, FUN = function(x) dim(x$Kmeans.groups)[2]))
+  # minimum evenness
+  minE <- 1 - (n.subgen - 1) * 1/maxNalleles^2 - ((maxNalleles - n.subgen + 1)/maxNalleles)^2
+  # sums of squares, minimum and maximum
+  minSS <- 0
+  maxSS <- 1
+  # xlim and ylim
+  if(length(pops) == 1){
+    Xlim <- c(minSS, maxSS)
+  } else { # leave room for legend if there are multiple pops
+    Xlim <- c(minSS, maxSS + (maxSS - minSS)/4)
+  }
+  Ylim <- c(minE, maxE)
+  
+  # set up plot
+  plot(as.vector(SSarray), as.vector(Earray), col = bgCol, main = "K-means results",
+       xlab = "Sums of squares between isoloci/total sums of squares",
+       ylab = "Evenness of number of alleles among isoloci", xlim = Xlim, ylim = Ylim)
+  # text to indicate good vs. bad
+  text(minSS, minE, labels = "Low quality allele clustering", adj = 0)
+  text(maxSS, maxE, labels = "High quality allele clustering", adj = 1)
+  
+  # plot all loci by population
+  for(p in 1:length(pops)){
+    text(SSarray[,p], Earray[,p], labels = loci, col = popCol[p], font = ifelse(posCor[,p], 3, 1))
+  }
+  
+  # add legend if there are multiple populations
+  if(length(pops) > 1){
+    legend(maxSS, 0.75 * (Ylim[2] - Ylim[1]) + Ylim[1], legend = pops,
+           text.col = popCol, title = "Populations", title.col = "black")
+  }
+  
+  # restore background color
+  par(bg = oldBg)
+  
+  # return the three arrays invisibly
+  return(invisible(list(ssratio = SSarray, evenness = Earray, 
+                        max.evenness = maxE, min.evenness = minE,
+                        posCor = posCor)))
+} # end plotSSAllo function
+
+# for one population, plot the proportion of alleles that are homoplasious for
+# each locus and parameter set.  Can also be used to plot missing data rate for
+# each parameter set and locus.
+plotParamHeatmap <- function(propMat, popname = "AllInd", col = grey.colors(12)[12:1],
+                             main = ""){
+  if(length(dim(propMat)) == 3){
+    # index by population if not already done
+    propMat <- propMat[,popname,]
+  }
+  if(length(dim(propMat)) != 2){
+    stop("propMat must have two dimensions.")
+  }
+  nloc <- dim(propMat)[1]
+  nparam <- dim(propMat)[2]
+  image(1:nparam, 1:nloc, t(propMat), xlab = "Parameter sets", ylab = "Loci",
+        main = paste(main,popname), axes = FALSE, col = col, zlim = c(0,1))
+  axis(1, at = 1:nparam)
+  axis(2, at = 1:nloc, labels = dimnames(propMat)[[1]])
+  
+  # highlight the best parameter set for each locus
+  for(i in 1:nloc){
+    text(which.min(propMat[i,]),i, "best")
+  }
+}
+
+# function to process an entire dataset and find optimal parameters 
+# for testAlGroups
+# plotsfile can be NULL
+# usePops: should allele assignments be performed separately by PopInfo in the object?
+processDatasetAllo <- function(object, samples = Samples(object), loci = Loci(object),
+                               n.subgen = 2, SGploidy = 2, n.start = 50, alpha = 0.05,
+                               parameters = data.frame(tolerance     = c(0.05, 0.05, 0.05, 0.05),
+                                                       rare.al.check = c(0.2,  0,    0.2,  0),
+                                                       null.weight   = c(0.5,  0.5,  0,    0)),
+                               plotsfile = "alleleAssignmentPlots.pdf", usePops = FALSE){
+  if(!all(samples %in% Samples(object))){
+    stop("Sample names in samples and object do not match.")
+  }
+  if(!all(loci %in% Loci(object))){
+    stop("Locus names in loci and object do not match.")
+  }
+  if(!all(c("tolerance", "rare.al.check", "null.weight") %in% names(parameters))){
+    stop("Parameters data frame needs column headers tolerance, rare.al.check, and null.weight.")
+  }
+  
+  object <- object[samples,]
+  nparam <- dim(parameters)[1] # number of parameter sets
+  
+  # set up population groups
+  if(usePops){
+    popinfo <- PopInfo(object)
+    if(any(is.na(popinfo))){
+      stop("PopInfo needed in object if usePops = TRUE.")
+    }
+    popnamesTemp <- PopNames(object)[popinfo]
+    
+    allpops <- unique(popnamesTemp)          # names of all populations
+    popinfo <- match(popnamesTemp, allpops)  # numbers for inviduals, corresponding to those names
+    npops <- length(allpops)                 # number of populations
+  } else {
+    popinfo <- rep(1, length(samples))
+    allpops <- "AllInd"
+    npops <- 1
+  }
+  
+  # set up arrays to contain results
+  # results of alleleCorrelations; 2D array, locus x population
+  CorrResults <- array(list(), dim = c(length(loci), npops), 
+                       dimnames = list(loci, allpops))
+  # results of testAlGroups; 3D array, locus x population x parameter set
+  TAGresults <- array(list(), dim = c(length(loci), npops, nparam),
+                     dimnames = list(loci, allpops, NULL))
+  
+  for(p in 1:npops){  # loop through populations
+    thesesamples <- samples[popinfo == p] # samples in this population
+    for(L in loci){  # loop through loci
+      CorrResults[[L, p]] <- alleleCorrelations(object, samples = thesesamples, locus = L,
+                                                alpha = alpha, n.subgen = n.subgen, n.start = n.start)
+      for(pm in 1:nparam){
+        TAGresults [[L, p, pm]] <- testAlGroups(object, CorrResults[[L, p]], SGploidy = SGploidy,
+                                                samples = thesesamples, null.weight = parameters$null.weight[pm],
+                                                tolerance = parameters$tolerance[pm], rare.al.check = parameters$rare.al.check[pm])
+      } # end of parameter set loop
+    } # end of locus loop
+  } # end of populations loop
+  
+  # get the proportion of alleles that are homoplasious for each locus, population, and parameter set
+  propHomoplasious <- sapply(TAGresults, FUN = function(x){mean(colSums(x$assignments) > 1)})
+  propHomoplasious <- array(propHomoplasious, dim = dim(TAGresults), dimnames = dimnames(TAGresults))
+  
+  # merge allele assignments across populations within parameter sets
+  if(usePops){
+    mergedAssignments <- array(list(), dim = c(length(loci), nparam),
+                               dimnames = list(loci, NULL))
+    for(L in loci){
+      for(pm in 1:nparam){
+        mergedAssignments[L,pm] <- mergeAlleleAssignments(TAGresults[L,,pm])
+      }
+    }
+    
+    # get the proportion of homoplasious alleles for each merged assignment set
+    propHomoplMerged <- sapply(mergedAssignments, FUN = function(x){
+      if(is.matrix(x$assignments)){
+        return(mean(colSums(x$assignments) > 1))
+      } else {  # if merged assignments were unresolvable
+        return(1)
+      }
+    })
+    propHomoplMerged <- array(propHomoplMerged, dim = dim(mergedAssignments),
+                              dimnames = dimnames(mergedAssignments))
+  } else {
+    mergedAssignments <- TAGresults[,1,]
+    propHomoplMerged <- propHomoplasious[,1,]
+  }
+  
+  # find the best assignment set for each locus
+  bestpm <- integer(length(loci)) # index of best parameter set for each locus
+  names(bestpm) <- loci
+  # matrix to hold missing data rate when data are recoded
+  missRate <- matrix(1, nrow = length(loci), ncol = nparam, dimnames = list(loci, NULL))
+  for(L in loci){
+    theseAssign <- list() # contain all unique assignments
+    theseAssignIndex <- integer(nparam) # for each parameter set, which unique assignment goes with it
+    # find all unique assignments
+    for(pm in 1:nparam){
+      if(!is.matrix(mergedAssignments[[L,pm]]$assignments)) next # skip if unresolvable
+      
+      thisAssign <- data.frame(mergedAssignments[[L,pm]]$assignments)
+      # sort the assignments
+      thisAssign <- thisAssign[do.call(order, thisAssign),]
+      # order the row names for consistency
+      row.names(thisAssign) <- 1:dim(thisAssign)[1] 
+      
+      # check if it should be added to list of uniques assignments, and do so
+      matchUn <- sapply(theseAssign, function(x) identical(x, thisAssign))
+      if(length(theseAssign) == 0 || all(!matchUn)){
+        theseAssign[[length(theseAssign) + 1]] <- thisAssign
+        theseAssignIndex[pm] <- 1
+      } else {
+        theseAssignIndex[pm] <- which(matchUn)
+      }
+    }
+    
+    if(all(theseAssignIndex == 0)) next # skip whole locus if totally unresolvable across pops
+    
+    # test recoding the data using each parameter set
+    for(a in 1:length(theseAssign)){
+      # turn assignments back into matrix
+      amat <- as.matrix(theseAssign[[a]])
+      dimnames(amat)[[2]] <- gsub("X", "", dimnames(amat)[[2]])
+      # recode genotypes
+      r <- recodeAllopoly(object, list(list(locus = L, SGploidy = SGploidy,
+                                            assignments = amat)),
+                           allowAneuploidy = FALSE, loci = L)
+      # proportion of genotypes present in the original that are missing now
+      oldMissing <- sum(isMissing(object, loci = L))
+      miss <- (sum(isMissing(r))/n.subgen - oldMissing)/(length(samples) - oldMissing)
+      # add to matrix for all matching parameter sets
+      missRate[L, which(theseAssignIndex == a)] <- miss
+    }
+    # identify the best set using missing data rate and amount of homoplasy
+    bestMiss <- which(missRate[L,] == min(missRate[L,], na.rm = TRUE))
+    bestpm[L] <- bestMiss[which.min(propHomoplMerged[L, bestMiss])]
+  } # end of locus loop for recoding and picking best parameter set
+  
+  # make a list of the best assignments
+  bestpm[bestpm == 0] <- 1 # for non-resolvable loci
+  bestAssign <- list()
+  for(l in 1:length(loci)){
+    bestAssign[[l]] <- mergedAssignments[[l, bestpm[l]]]
+  }
+  
+  ## plots: distribution of betweenss/totss, heatmaps
+  pdf(plotsfile) # open connection to PDF file for making plots
+  plotSS <- plotSSAllo(CorrResults) # make plot of sums-of-squares ratio vs. allele distribution evenness
+  # heatmaps
+  for(L in loci){
+    for(p in allpops){
+      if(!is.null(CorrResults[[L,p]]$heatmap.dist)){
+        heatmap(CorrResults[[L,p]]$heatmap.dist, main = paste(L, p, sep = ", "))
+      } else {
+        plot(NA, xlim = c(0,10), ylim = c(0,10), main = paste(L, p, sep = ", "))
+        text(5,5, "Fisher's exact tests not performed.\nOne or more alleles are present in all individuals.")
+      }
+    }
+  }
+  for(p in allpops){
+    plotParamHeatmap(propHomoplasious[,p,], popname = p, main = "Proportion homoplasious loci:")
+  }
+  if(usePops){
+    plotParamHeatmap(propHomoplMerged, popname = "Merged across populations", main = "Proportion homoplasious loci:")
+  }
+  plotParamHeatmap(missRate, popname = "All Individuals", main = "Missing data after recoding:")
+  dev.off()      # close connection to PDF file
+  
+  return(list(AlCorrArray = CorrResults, TAGarray = TAGresults, plotSS = plotSS,
+              propHomoplasious = propHomoplasious, mergedAssignments = mergedAssignments,
+              propHomoplMerged = propHomoplMerged, missRate = missRate, bestAssign = bestAssign))
+} # end of processDatasetAllo function
 
 # function to rewrite genambig object using allele assignments
 # object = genambig or genbinary object
@@ -800,7 +1083,7 @@ recodeAllopoly <- function(object, x, allowAneuploidy=TRUE,
     # set up new object
     # duplicate the loci that should be duplicated
     newloci <- paste(rep(lociA, times=nSG),unlist(lapply(nSG, function(y) 1:y)),
-                     sep="-")
+                     sep="_")
     extraloci <- loci[!loci %in% lociA]
     newloci <- c(newloci, extraloci)
     result <- new("genambig", samples, newloci)
@@ -812,7 +1095,7 @@ recodeAllopoly <- function(object, x, allowAneuploidy=TRUE,
                              ncol=sum(!newloci %in% extraloci),
                              byrow=TRUE)
     # transfer ploidy data for loci that aren't being recoded
-    if(length(extraloci) > 0){ 
+    if(length(extraloci) > 0){
         if(is(object@Ploidies, "ploidymatrix")){
             newploidies <- cbind(newploidies,
                                  Ploidies(object, samples=samples,
@@ -841,7 +1124,7 @@ recodeAllopoly <- function(object, x, allowAneuploidy=TRUE,
     # start assignments
     for(L in loci){
         # get positions of isoloci in new object
-        Lindex <- which(sapply(strsplit(newloci, "-"), function(y) y[1]) == L)
+        Lindex <- which(sapply(strsplit(newloci, "_"), function(y) y[1]) == L)
         # copy over microsat repeat lengths
         Usatnts(result)[Lindex] <- Usatnts(object)[L]
         if(length(Lindex)==1){ # for loci with no assignments:
@@ -856,7 +1139,7 @@ recodeAllopoly <- function(object, x, allowAneuploidy=TRUE,
                                  is.numeric, USE.NAMES=FALSE))
             # If there are any alleles that are unassigned, make them
             # fully homoplasious.
-            AL <- A[[L]]  
+            AL <- A[[L]]
             allelesL <- as.character(.unal1loc(object, xsamples, L))
             allelesUA <- allelesL[!allelesL %in% dimnames(AL)[[2]]]
             if(length(allelesUA)>0){
@@ -934,7 +1217,7 @@ recodeAllopoly <- function(object, x, allowAneuploidy=TRUE,
             }
             # convert zero-length genotypes to missing data
             alBySG[nAl==0] <- Missing(result)
-            
+
             # add genotypes to genambig object
             Genotypes(result, samples=s,loci=Lindex) <- alBySG
         } # end of sample loop
@@ -942,6 +1225,6 @@ recodeAllopoly <- function(object, x, allowAneuploidy=TRUE,
     } # end of locus loop
     return(result)
 } # end of function
-                           
+
 # polysat should have its own theme song to the tune of "Smelly Cat" from
 # Friends.

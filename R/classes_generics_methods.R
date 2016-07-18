@@ -266,6 +266,11 @@ setClass("gendata", representation(Description="character", Missing="ANY",
                  failures <- c(failures, "Not all locus names are unique.")
              }
 
+             # check to see that locus names do not contain periods
+             if(length(grep(".", names(object@Usatnts), fixed=TRUE)) > 0){
+                 failures <- c(failures, "Locus names may not contain periods.")
+             }
+
              # return TRUE or failures
              if(length(failures) == 0){
                  return(TRUE)
@@ -449,6 +454,16 @@ setGeneric("Present<-", function(object, value) standardGeneric("Present<-"))
 setGeneric("Absent", function(object) standardGeneric("Absent"))
 setGeneric("Absent<-", function(object, value) standardGeneric("Absent<-"))
 
+# function for making locus names compatible as column headers
+fixloci <- function(loci, warn = TRUE){
+    loci2 <- make.names(loci)
+    loci2 <- gsub(".", "", loci2, fixed = TRUE)
+    if(warn && !identical(loci, loci2)){
+      warning("Special characters removed from locus names.")
+    }
+    return(loci2)
+}
+
 #### gendata methods
 # initialization for a gendata object
 setMethod("initialize",
@@ -457,6 +472,9 @@ setMethod("initialize",
     {
         if(missing(samples)) samples <- c("ind1","ind2")
         if(missing(loci)) loci <- c("loc1","loc2")
+
+        # fix locus names so that they can be column headers if necessary
+        loci <- fixloci(loci)
 
         # make a vector to contain repeat lengths
         usatnts <- as.integer(rep(NA, length(loci)))
@@ -589,10 +607,16 @@ setMethod("Loci", signature(object = "gendata", usatnts = "numeric", ploidies="n
 
 ## Replacement method for locus names
 setReplaceMethod("Loci", "gendata", function(object, value){
+    # fix names so that they can be column headers if necessary
+    value <- fixloci(value)
     # check that all locus names are unique
     if(length(unique(value)) < length(value)){
         stop("Not all locus names are unique")
     }
+    # check that locus names do not contain periods
+#    if(length(grep(".", value, fixed=TRUE)) > 0){
+#        stop("Locus names may not contain periods.")
+#    }
   # Replace Ploidies names if necessary
   if(is(object@Ploidies,"ploidylocus"))
     names(object@Ploidies@pld) <- value
@@ -978,6 +1002,8 @@ setMethod("initialize", signature(.Object = "genambig"),
               if(missing(samples)) samples <- c("ind1","ind2")
               if(missing(loci)) loci <- c("loc1","loc2")
               if(missing(Missing)) Missing <- as.integer(-9)
+              
+              loci <- fixloci(loci) # fix locus names
 
               # add empty genotype list
     .Object@Genotypes <- array(list(Missing), dim=c(length(samples),
@@ -995,6 +1021,7 @@ setReplaceMethod("Samples", "genambig", function(object, value){
 
 # replacement method for locus names
 setReplaceMethod("Loci", "genambig", function(object, value){
+    value <- fixloci(value) # correct locus names if necessary
     dimnames(object@Genotypes)[[2]] <- value
     callNextMethod(object, value)
 })
@@ -1013,6 +1040,8 @@ setReplaceMethod("Genotype", "genambig", function(object, sample, locus, value){
         stop("sample and locus arguments must have only one element.")
     }
     if(!is.vector(value)) stop("Assigned value must be a vector.")
+    if(length(value) == 0) stop("Genotype vector must have at least one element.  See ?Missing.")
+    if(any(is.na(value))) stop("NA values not allowed in genotypes.  See ?Missing.")
     object@Genotypes[[sample, locus]] <- value
     object
 })
@@ -1028,6 +1057,10 @@ setReplaceMethod("Genotypes", "genambig",
                          stop("Assigned value has too many dimensions.")
                      if(FALSE %in% mapply(is.vector, value))
                          stop("All array elements must be vectors.")
+                     if(0 %in% mapply(length, value))
+                       stop("All genotype vectors must have at least one element.  See ?Missing.")
+                     if(any(mapply(function(x) any(is.na(x)), value)))
+                       stop("NA values not allowed in genotypes.  see ?Missing.")
     object@Genotypes[samples, loci] <- value
     object
 })
@@ -1283,6 +1316,8 @@ setMethod("initialize", signature(.Object = "genbinary"),
 #              if(missing(Present)) Present <- as.integer(1)
 #              if(missing(Absent)) Absent <- as.integer(0)
 
+              loci <- fixloci(loci)
+
               # add empty genotype matrix
               .Object@Genotypes <- matrix(nrow=length(samples), ncol=0,
                                           dimnames=list(samples, NULL))
@@ -1421,6 +1456,7 @@ setReplaceMethod("Samples", "genbinary", function(object, value){
 setReplaceMethod("Loci", "genbinary", function(object, value){
     # get the original locus names and systematically replace them
     oldloci <- Loci(object)
+    value <- fixloci(value) # correct locus names if necessary
     for(i in 1:length(oldloci)){
         dimnames(object@Genotypes)[[2]] <- gsub(paste(oldloci[i],".",sep=""),
                                                 paste(value[i],".",sep=""),

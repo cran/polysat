@@ -1,7 +1,7 @@
 ### R code from vignette source 'allopolyVignette.Rnw'
 
 ###################################################
-### code chunk number 1: allopolyVignette.Rnw:125-130
+### code chunk number 1: allopolyVignette.Rnw:133-138
 ###################################################
 library(polysat)
 data(AllopolyTutorialData)
@@ -11,11 +11,12 @@ mydata <- AllopolyTutorialData
 
 
 ###################################################
-### code chunk number 2: allopolyVignette.Rnw:147-156
+### code chunk number 2: allopolyVignette.Rnw:155-165
 ###################################################
 # Calculate the length of each genotype vector (= the number of alleles) and
 # construct a TRUE/FALSE matrix of whether that number is greater than four.
-tooManyAlleles <- apply(Genotypes(mydata), c(1,2), function(x) length(x[[1]])) > 4
+tooManyAlleles <- apply(Genotypes(mydata), c(1,2), 
+                        function(x) length(x[[1]])) > 4
 # Find position(s) in the matrix that are TRUE.
 which(tooManyAlleles, arr.ind=TRUE) # 43rd sample, second locus
 # Look at the identified genotype, then replace it with missing data.
@@ -25,20 +26,20 @@ Genotype(mydata, 43, 2)
 
 
 ###################################################
-### code chunk number 3: allopolyVignette.Rnw:163-165 (eval = FALSE)
+### code chunk number 3: allopolyVignette.Rnw:172-174 (eval = FALSE)
 ###################################################
 ## mydist <- meandistance.matrix(mydata, distmetric=Lynch.distance,
 ##                               progress=FALSE)
 
 
 ###################################################
-### code chunk number 4: allopolyVignette.Rnw:168-169
+### code chunk number 4: allopolyVignette.Rnw:177-178
 ###################################################
 load("vignettebuild/AllopolyTutorialDist.RData")
 
 
 ###################################################
-### code chunk number 5: allopolyVignette.Rnw:172-175
+### code chunk number 5: allopolyVignette.Rnw:181-184
 ###################################################
 require(ape)
 mynj <- nj(mydist)
@@ -46,13 +47,13 @@ plot(mynj, type="unrooted")
 
 
 ###################################################
-### code chunk number 6: allopolyVignette.Rnw:185-186
+### code chunk number 6: allopolyVignette.Rnw:194-195
 ###################################################
 mydata <- deleteSamples(mydata, c("301","302","303"))
 
 
 ###################################################
-### code chunk number 7: allopolyVignette.Rnw:192-196
+### code chunk number 7: allopolyVignette.Rnw:201-205
 ###################################################
 par(mfrow=c(2,1))
 mypca <- cmdscale(mydist[Samples(mydata), Samples(mydata)])
@@ -61,229 +62,187 @@ hist(mypca[,1], breaks=30)
 
 
 ###################################################
-### code chunk number 8: allopolyVignette.Rnw:204-206
+### code chunk number 8: allopolyVignette.Rnw:213-217
 ###################################################
 pop1ind <- Samples(mydata)[mypca[,1] <= 0]
 pop2ind <- Samples(mydata)[mypca[,1] > 0]
+PopInfo(mydata)[pop1ind] <- 1
+PopInfo(mydata)[pop2ind] <- 2
 
 
 ###################################################
-### code chunk number 9: allopolyVignette.Rnw:248-279
+### code chunk number 9: allopolyVignette.Rnw:274-276 (eval = FALSE)
 ###################################################
-nloc <- length(Loci(mydata)) # 7 loci
-# lists to contain results of alleleCorrelations
-CorrPop1 <- CorrPop2 <- list()
-length(CorrPop1) <- length(CorrPop2) <- nloc
-names(CorrPop1) <- names(CorrPop2) <- Loci(mydata)
-# lists to contain results of testAlGroups
-TAGpop1param1 <- list()
-length(TAGpop1param1) <- nloc
-names(TAGpop1param1) <- Loci(mydata)
-TAGpop1param2 <- TAGpop1param3 <- TAGpop1param1
-TAGpop2param1 <- TAGpop2param2  <- TAGpop2param3 <- TAGpop1param1
-
-# loop through loci
-for(L in Loci(mydata)){
-  # allele correlations
-  CorrPop1[[L]] <- alleleCorrelations(mydata, samples=pop1ind, locus = L)
-  CorrPop2[[L]] <- alleleCorrelations(mydata, samples=pop2ind, locus = L)
-  # default parameter set
-  TAGpop1param1[[L]] <- testAlGroups(mydata, CorrPop1[[L]], samples=pop1ind)
-  TAGpop2param1[[L]] <- testAlGroups(mydata, CorrPop2[[L]], samples=pop2ind)
-  # optimized for homoplasy
-  TAGpop1param2[[L]] <- testAlGroups(mydata, CorrPop1[[L]], samples=pop1ind,
-                                     rare.al.check=0)
-  TAGpop2param2[[L]] <- testAlGroups(mydata, CorrPop2[[L]], samples=pop2ind,
-                                     rare.al.check=0)
-  # optimized for null alleles
-  TAGpop1param3[[L]] <- testAlGroups(mydata, CorrPop1[[L]], samples=pop1ind,
-                                     null.weight=0)
-  TAGpop2param3[[L]] <- testAlGroups(mydata, CorrPop2[[L]], samples=pop2ind,
-                                     null.weight=0)
-}
+## myassign <- processDatasetAllo(mydata, n.subgen = 2, SGploidy = 2, 
+##                                usePops = TRUE)
 
 
 ###################################################
-### code chunk number 10: allopolyVignette.Rnw:291-293
+### code chunk number 10: allopolyVignette.Rnw:279-281
 ###################################################
-CorrPop1[["Loc6"]]$significant.pos
-CorrPop2[["Loc6"]]$significant.pos
+myassign <- processDatasetAllo(mydata, n.subgen = 2, SGploidy = 2, usePops = TRUE,
+                               plotsfile = NULL)
 
 
 ###################################################
-### code chunk number 11: allopolyVignette.Rnw:303-304
+### code chunk number 11: allopolyVignette.Rnw:299-301
+###################################################
+myassign$AlCorrArray[["Loc6", 1]]$significant.pos
+myassign$AlCorrArray[["Loc6", 2]]$significant.pos
+
+
+###################################################
+### code chunk number 12: allopolyVignette.Rnw:311-312
 ###################################################
 mydata <- deleteLoci(mydata, loci="Loc6")
 
 
 ###################################################
-### code chunk number 12: allopolyVignette.Rnw:313-315
+### code chunk number 13: allopolyVignette.Rnw:328-330
 ###################################################
-# Population 1
-heatmap(CorrPop1[["Loc1"]]$heatmap.dist, symm=TRUE)
+par(mfrow = c(1,1))
+plotSSAllo(myassign$AlCorrArray)
 
 
 ###################################################
-### code chunk number 13: allopolyVignette.Rnw:317-324
+### code chunk number 14: allopolyVignette.Rnw:357-359
+###################################################
+heatmap(myassign$AlCorrArray[["Loc5", "Pop1"]]$heatmap.dist,
+        main = "Loc5, Pop1")
+
+
+###################################################
+### code chunk number 15: allopolyVignette.Rnw:364-372
 ###################################################
 # A plot to show how the colors correspond to p-values in the
 # heat map; you can repeat this for the other heat maps in this
 # tutorial if you wish.
-plot(x=seq(min(CorrPop1[["Loc1"]]$heatmap.dist),
-           max(CorrPop1[["Loc1"]]$heatmap.dist), length.out=12),
+plot(x=seq(min(myassign$AlCorrArray[["Loc5", "Pop1"]]$heatmap.dist),
+           max(myassign$AlCorrArray[["Loc5", "Pop1"]]$heatmap.dist), 
+           length.out=12),
      y=rep(1,12), xlab="P-values", ylab="", bg=heat.colors(12), 
      pch=22, cex=3)
 
 
 ###################################################
-### code chunk number 14: allopolyVignette.Rnw:326-331
+### code chunk number 16: allopolyVignette.Rnw:374-376
 ###################################################
-CorrPop1[["Loc1"]]$Kmeans.groups
-CorrPop1[["Loc1"]]$UPGMA.groups
-TAGpop1param1[["Loc1"]]$assignments
-TAGpop1param2[["Loc1"]]$assignments
-TAGpop1param3[["Loc1"]]$assignments
+heatmap(myassign$AlCorrArray[["Loc6", "Pop1"]]$heatmap.dist,
+        main = "Loc6, Pop1")
 
 
 ###################################################
-### code chunk number 15: allopolyVignette.Rnw:333-335
+### code chunk number 17: allopolyVignette.Rnw:381-383
 ###################################################
-# Population 2
-heatmap(CorrPop2[["Loc1"]]$heatmap.dist, symm=TRUE)
+heatmap(myassign$AlCorrArray[["Loc7", "Pop1"]]$heatmap.dist,
+        main = "Loc7, Pop1")
 
 
 ###################################################
-### code chunk number 16: allopolyVignette.Rnw:337-342
+### code chunk number 18: allopolyVignette.Rnw:385-387
 ###################################################
-CorrPop2[["Loc1"]]$Kmeans.groups
-CorrPop2[["Loc1"]]$UPGMA.groups
-TAGpop2param1[["Loc1"]]$assignments
-TAGpop2param2[["Loc1"]]$assignments
-TAGpop2param3[["Loc1"]]$assignments
+heatmap(myassign$AlCorrArray[["Loc7", "Pop2"]]$heatmap.dist,
+        main = "Loc7, Pop2")
 
 
 ###################################################
-### code chunk number 17: allopolyVignette.Rnw:355-357
+### code chunk number 19: allopolyVignette.Rnw:411-413
 ###################################################
-AssignToUse <- list()
-AssignToUse[[1]] <- TAGpop1param2[["Loc1"]]
+plotParamHeatmap(myassign$propHomoplasious, popname = "Pop1", 
+                 main = "Proportion homoplasious loci:")
 
 
 ###################################################
-### code chunk number 18: allopolyVignette.Rnw:364-419 (eval = FALSE)
+### code chunk number 20: allopolyVignette.Rnw:423-425
 ###################################################
-## heatmap(CorrPop1[["Loc2"]]$heatmap.dist, symm=TRUE)
-## CorrPop1[["Loc2"]]$Kmeans.groups
-## CorrPop1[["Loc2"]]$UPGMA.groups
-## TAGpop1param1[["Loc2"]]$assignments
-## TAGpop1param2[["Loc2"]]$assignments
-## TAGpop1param3[["Loc2"]]$assignments
-## # Population 2
-## heatmap(CorrPop2[["Loc2"]]$heatmap.dist, symm=TRUE)
-## CorrPop2[["Loc2"]]$Kmeans.groups
-## CorrPop2[["Loc2"]]$UPGMA.groups
-## TAGpop2param1[["Loc2"]]$assignments
-## TAGpop2param2[["Loc2"]]$assignments
-## TAGpop2param3[["Loc2"]]$assignments
-## 
-## heatmap(CorrPop1[["Loc3"]]$heatmap.dist, symm=TRUE)
-## CorrPop1[["Loc3"]]$Kmeans.groups
-## CorrPop1[["Loc3"]]$UPGMA.groups
-## TAGpop1param1[["Loc3"]]$assignments
-## TAGpop1param2[["Loc3"]]$assignments
-## TAGpop1param3[["Loc3"]]$assignments
-## # Population 2
-## heatmap(CorrPop2[["Loc3"]]$heatmap.dist, symm=TRUE)
-## CorrPop2[["Loc3"]]$Kmeans.groups
-## CorrPop2[["Loc3"]]$UPGMA.groups
-## TAGpop2param1[["Loc3"]]$assignments
-## TAGpop2param2[["Loc3"]]$assignments
-## TAGpop2param3[["Loc3"]]$assignments
-## 
-## heatmap(CorrPop1[["Loc4"]]$heatmap.dist, symm=TRUE)
-## CorrPop1[["Loc4"]]$Kmeans.groups
-## CorrPop1[["Loc4"]]$UPGMA.groups
-## TAGpop1param1[["Loc4"]]$assignments
-## TAGpop1param2[["Loc4"]]$assignments
-## TAGpop1param3[["Loc4"]]$assignments
-## # Population 2
-## heatmap(CorrPop2[["Loc4"]]$heatmap.dist, symm=TRUE)
-## CorrPop2[["Loc4"]]$Kmeans.groups
-## CorrPop2[["Loc4"]]$UPGMA.groups
-## TAGpop2param1[["Loc4"]]$assignments
-## TAGpop2param2[["Loc4"]]$assignments
-## TAGpop2param3[["Loc4"]]$assignments
-## 
-## heatmap(CorrPop1[["Loc5"]]$heatmap.dist, symm=TRUE)
-## CorrPop1[["Loc5"]]$Kmeans.groups
-## CorrPop1[["Loc5"]]$UPGMA.groups
-## TAGpop1param1[["Loc5"]]$assignments
-## TAGpop1param2[["Loc5"]]$assignments
-## TAGpop1param3[["Loc5"]]$assignments
-## # Population 2
-## heatmap(CorrPop2[["Loc5"]]$heatmap.dist, symm=TRUE)
-## CorrPop2[["Loc5"]]$Kmeans.groups
-## CorrPop2[["Loc5"]]$UPGMA.groups
-## TAGpop2param1[["Loc5"]]$assignments
-## TAGpop2param2[["Loc5"]]$assignments
-## TAGpop2param3[["Loc5"]]$assignments
+plotParamHeatmap(myassign$propHomoplasious, popname = "Pop2", 
+                 main = "Proportion homoplasious loci:")
 
 
 ###################################################
-### code chunk number 19: allopolyVignette.Rnw:423-427
+### code chunk number 21: allopolyVignette.Rnw:437-439
 ###################################################
-AssignToUse[[2]] <- TAGpop1param1[["Loc2"]]
-AssignToUse[[3]] <- TAGpop1param1[["Loc3"]]
-AssignToUse[[4]] <- TAGpop1param1[["Loc4"]]
-AssignToUse[[5]] <- TAGpop1param1[["Loc5"]]
+plotParamHeatmap(myassign$propHomoplMerged, popname = "Merged across populations", 
+                 main = "Proportion homoplasious loci:")
 
 
 ###################################################
-### code chunk number 20: allopolyVignette.Rnw:432-433
+### code chunk number 22: allopolyVignette.Rnw:461-463
 ###################################################
-heatmap(CorrPop1[["Loc7"]]$heatmap.dist, symm=TRUE)
+plotParamHeatmap(myassign$missRate, popname = "All Individuals", 
+                 main = "Missing data after recoding:")
 
 
 ###################################################
-### code chunk number 21: allopolyVignette.Rnw:435-436
+### code chunk number 23: allopolyVignette.Rnw:483-486
 ###################################################
-heatmap(CorrPop2[["Loc7"]]$heatmap.dist, symm=TRUE)
+myBestAssign <- myassign$bestAssign
+myBestAssign
+myBestAssign <- myBestAssign[1:5]
 
 
 ###################################################
-### code chunk number 22: allopolyVignette.Rnw:438-444
+### code chunk number 24: allopolyVignette.Rnw:499-503
 ###################################################
-TAGpop1param1[["Loc7"]]$assignments
-TAGpop1param2[["Loc7"]]$assignments
-TAGpop1param3[["Loc7"]]$assignments
-TAGpop2param1[["Loc7"]]$assignments
-TAGpop2param2[["Loc7"]]$assignments
-TAGpop2param3[["Loc7"]]$assignments
+myassign$AlCorrArray[["Loc1", "Pop1"]]$Kmeans.groups
+myassign$AlCorrArray[["Loc1", "Pop2"]]$Kmeans.groups
+myassign$AlCorrArray[["Loc1", "Pop1"]]$UPGMA.groups
+myassign$AlCorrArray[["Loc1", "Pop2"]]$UPGMA.groups
 
 
 ###################################################
-### code chunk number 23: allopolyVignette.Rnw:459-460
+### code chunk number 25: allopolyVignette.Rnw:512-524
 ###################################################
-mydata <- deleteLoci(mydata, loci="Loc7")
+myassign$TAGarray[["Loc1", "Pop1", 1]]$assignments
+myassign$TAGarray[["Loc1", "Pop2", 1]]$assignments
+myassign$mergedAssignments[["Loc1", 1]]$assignments
+myassign$TAGarray[["Loc1", "Pop1", 2]]$assignments
+myassign$TAGarray[["Loc1", "Pop2", 2]]$assignments
+myassign$mergedAssignments[["Loc1", 2]]$assignments
+myassign$TAGarray[["Loc1", "Pop1", 3]]$assignments
+myassign$TAGarray[["Loc1", "Pop2", 3]]$assignments
+myassign$mergedAssignments[["Loc1", 3]]$assignments
+myassign$TAGarray[["Loc1", "Pop1", 4]]$assignments
+myassign$TAGarray[["Loc1", "Pop2", 4]]$assignments
+myassign$mergedAssignments[["Loc1", 4]]$assignments
 
 
 ###################################################
-### code chunk number 24: allopolyVignette.Rnw:472-475
+### code chunk number 26: allopolyVignette.Rnw:545-548
 ###################################################
-Loc1Param1Merged <- mergeAlleleAssignments(list(TAGpop1param1[["Loc1"]], 
-                                                TAGpop2param1[["Loc1"]]))
-Loc1Param1Merged[[1]]$assignments
+corrLoc1AllInd <- alleleCorrelations(mydata, locus = "Loc1", n.subgen = 2)
+corrLoc1AllInd$Kmeans.groups
+corrLoc1AllInd$UPGMA.groups
 
 
 ###################################################
-### code chunk number 25: allopolyVignette.Rnw:502-504
+### code chunk number 27: allopolyVignette.Rnw:559-567
 ###################################################
-recodedData <- recodeAllopoly(mydata, AssignToUse)
+TaLoc1.param2 <- testAlGroups(mydata, corrLoc1AllInd, SGploidy = 2,
+                              null.weight = 0.5, tolerance = 0.05, 
+                              rare.al.check = 0)
+TaLoc1.param5 <- testAlGroups(mydata, corrLoc1AllInd, SGploidy = 2,
+                              null.weight = 0.5, tolerance = 0.1, 
+                              rare.al.check = 0)
+TaLoc1.param2$assignments
+TaLoc1.param5$assignments
+
+
+###################################################
+### code chunk number 28: allopolyVignette.Rnw:575-576
+###################################################
+myBestAssign[[1]] <- TaLoc1.param5
+
+
+###################################################
+### code chunk number 29: allopolyVignette.Rnw:584-586
+###################################################
+recodedData <- recodeAllopoly(mydata, myBestAssign)
 summary(recodedData)
 
 
 ###################################################
-### code chunk number 26: allopolyVignette.Rnw:512-516
+### code chunk number 30: allopolyVignette.Rnw:594-598
 ###################################################
 for(L in Loci(recodedData)){
   proportionmissing <- mean(isMissing(recodedData, loci=L))
@@ -292,13 +251,33 @@ for(L in Loci(recodedData)){
 
 
 ###################################################
-### code chunk number 27: allopolyVignette.Rnw:524-525
+### code chunk number 31: allopolyVignette.Rnw:606-607
 ###################################################
 table(Ploidies(recodedData))
 
 
 ###################################################
-### code chunk number 28: allopolyVignette.Rnw:541-549
+### code chunk number 32: allopolyVignette.Rnw:612-613
+###################################################
+Ploidies(recodedData)[,"Loc7"] <- 4
+
+
+###################################################
+### code chunk number 33: allopolyVignette.Rnw:621-624
+###################################################
+myfreq <- simpleFreq(recodedData)
+myGst <- calcPopDiff(myfreq, metric = "Gst")
+myGst
+
+
+###################################################
+### code chunk number 34: allopolyVignette.Rnw:629-630
+###################################################
+write.GeneMapper(recodedData, file = "tutorialRecodedData.txt")
+
+
+###################################################
+### code chunk number 35: allopolyVignette.Rnw:642-650
 ###################################################
 catResults <- list()
 length(catResults) <- length(Loci(mydata))
