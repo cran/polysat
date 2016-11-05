@@ -19,10 +19,10 @@ plotSSAllo(AlCorrArray)
 plotParamHeatmap(propMat, popname = "AllInd", col = grey.colors(12)[12:1], main = "")
 processDatasetAllo(object, samples = Samples(object), loci = Loci(object),
                    n.subgen = 2, SGploidy = 2, n.start = 50, alpha = 0.05,
-                   parameters = data.frame(tolerance     = c(0.05, 0.05, 0.05, 0.05),
-                                           rare.al.check = c(0.2,  0,    0.2,  0),
-                                           null.weight   = c(0.5,  0.5,  0,    0)),
-                   plotsfile = "alleleAssignmentPlots.pdf", usePops = FALSE)
+                   parameters = data.frame(tolerance     = c(0.05, 0.05,  0.05, 0.05),
+                                           swap          = c(TRUE, FALSE, TRUE, FALSE),
+                                           null.weight   = c(0.5,  0.5,   0,    0)),
+                   plotsfile = "alleleAssignmentPlots.pdf", usePops = FALSE, ...)
 }
 
 \arguments{
@@ -56,6 +56,7 @@ plots are desired.}
 \item{usePops}{If \code{TRUE}, population assignments are taken from the \code{PopInfo} slot of \code{object}, and 
 populations are analyzed separately with \code{alleleCorrelations} and \code{testAlGroups}, before merging the 
 results with \code{mergeAlleleAssignments}.}
+\item{...}{Additional parameters to pass to \code{testAlGroups} for adjusting the simulated annealing algorithm.}
 }
 \details{
 \code{plotSSAllo} produces a plot of loci by population, with the sums-of-squares ratio on the x-axis and the evenness of allele distribution
@@ -84,7 +85,7 @@ Each value is the sums-of-squares between isoloci divided by the total sums-of-s
 clustering.  If K-means clustering was not performed, the value is zero.}
 \item{evenness }{An array of the same dimensions as \code{$ssratio}, containing values to indicate how evenly
 alleles are distributed among isoloci as determined by K-means clustering.  This is:
-\deqn{1 - \sum_{1}^{i}{(frac{a_{i}}{A})^2}}{1 - \sum_{1}^{i}{(a_i/A)^2}}
+\deqn{1 - \sum_{1}^{i}{(\frac{a_{i}}{A})^2}}{1 - \sum_{1}^{i}{(a_i/A)^2}}
 where \eqn{i} is the number of isoloci, \eqn{a_i} is the number of alleles for a given isolocus, and \eqn{A}
 is the total number of alleles for the locus.}
 \item{max.evenness }{The maximum possible value for \code{$evenness}, given the number of isoloci.}
@@ -137,8 +138,12 @@ PopInfo(mydata) <- rep(1:2, each = 150)
 Genotype(mydata, 43, 2) <- Missing(mydata)
 
 # allele assignments
+# R is set to 10 here to speed processing for example.  It should typically be left at the default.
 myassign <- processDatasetAllo(mydata, loci = c("Loc3", "Loc6"),
-                               plotsfile = NULL, usePops = TRUE)
+                               plotsfile = NULL, usePops = TRUE, R = 10,
+                               parameters = data.frame(tolerance = c(0.5, 0.5), 
+                               swap = c(TRUE, FALSE),
+                               null.weight = c(0.5, 0.5)))
 
 # view best assignments for each locus
 myassign$bestAssign
