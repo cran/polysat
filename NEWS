@@ -1,3 +1,22 @@
+Changes in version 1.7-0
+
+The function calcPopDiff has a new argument called "global" that can be used if 
+global rather than pairwise statistics are desired.  It also has an argument
+called "bootstrap" if replicates bootstrapped across loci are desired.
+
+A new function has been introduced, called "PIC", that estimates the 
+Polymorphic Information Content of loci.
+
+The function "genIndex" has been added for rapidly identifying all unique
+genotypes for a given locus.  meandistance.matrix and meandistance.matrix2
+now call this function, reducing their processing time several-fold.
+
+Bruvo.distance and Bruvo2.distance have been edited to speed processing several-fold.
+Package dependency on the combinat package has been removed since Bruvo.distance no
+longer requires combinat.
+
+Updated citation information with DOI for Molecular Ecology Resources.
+
 Changes in version 1.6-0
 
 The allele swapping algorithm used by testAlGroups has changed.  Allele assignments

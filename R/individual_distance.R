@@ -1,69 +1,60 @@
-Bruvo.distance <- function(genotype1, genotype2, maxl=9, usatnt=2, missing=-9) {
+Bruvo.distance <- function(genotype1, genotype2, maxl=10, usatnt=2, missing=-9) {
     
-if(is.na(usatnt)) stop("Bruvo.distance needs info from Usatnts slot.")
+  if(is.na(usatnt)) stop("Bruvo.distance needs info from Usatnts slot.")
 
-if(identical(genotype1, genotype2)&&genotype1[1]!=missing) {dist <- 0} else {
-    if((length(genotype1)>maxl & length(genotype2)>maxl)|
-       genotype1[1]==missing|genotype2[1]==missing){
-        dist <- NA} else {
-        if(length(genotype1) >= length(genotype2)) {
-            genotypeL <- genotype1/usatnt; genotypeS <- genotype2/usatnt} else {
-                genotypeL <- genotype2/usatnt; genotypeS <- genotype1/usatnt}
+  if(identical(genotype1, genotype2) && genotype1[1]!=missing){
+    dist <- 0 # If genotypes are identical, just return a distance of zero without doing the rest of the calculation.
+  } else {
+    if((length(genotype1) > maxl && length(genotype2) > maxl) | # If genotypes are both longer than 10, skip this calculation because it will take over a minute.
+       genotype1[1] == missing | genotype2[1] == missing){
+      dist <- NA
+    } else {
+      # Whichever genotype has more alleles, make this genotypeL (long) and the other genotypeS (short).
+      # convert alleles into repeat counts by dividing by usatnt
+      if(length(genotype1) >= length(genotype2)){
+        genotypeL <- genotype1/usatnt
+        genotypeS <- genotype2/usatnt
+      } else {
+        genotypeL <- genotype2/usatnt
+        genotypeS <- genotype1/usatnt
+      }
 
-# if genotypes are identical, just return a distance of zero without doing the rest
-        # of the calculation
-# if genotypes are both longer than 9, skip this calculation because it will take hours
-# whichever genotype has more alleles, make this genotypeL (long) and the other
-        # genotypeS (short)
-# convert alleles into repeat counts by dividing by usatnt
+      kl <- length(genotypeL) # sets the ploidy level for this genotype comparison
+      ks <- length(genotypeS) # number of alleles in the shorter genotype
 
-kl <- length(genotypeL) # sets the ploidy level for this genotype comparison
-ks <- length(genotypeS) # number of alleles in the shorter genotype
+      allele.distances <- array(0 , c(kl,ks))
+      # Create an empty matrix to contain the raw distances between alleles
 
-allele.distances <- array(0 , c(kl,ks))
-# Create an empty matrix to contain the raw distances between alleles
+      for(n in 1:kl){
+         for(m in 1:ks){
+           allele.distances[n,m] <- genotypeL[n] - genotypeS[m]
+        }
+      }
+      # fills the array with the differences in allele repeat count
+      
+#      allele.distances <- sweep(matrix(genotypeL, nrow = kl, ncol = ks), 2, genotypeS) 
+      # alternative calculation differences in repeat count; seems to be slower in many cases
+      
+      geometric.distances <- 1 - 2^-abs(allele.distances)
+      # geometric transformation based on mutation probabilities
 
-for(n in 1:kl) { for(m in 1:ks) {allele.distances[n,m] <- genotypeL[n] - genotypeS[m]}}
-# fills the array with the differences in allele repeat count
-
-geometric.distances <- array(1 - 2^-abs(allele.distances) , c(kl,ks))
-# geometric transformation based on mutation probabilities
-
-#Next, find the minimum distance sum among all permutations
-
-column <- 1:ks # an index of all columns (genotypeS alleles)
-row <- 1:kl # an index of all rows (genotypeL alleles)
-
-combinations <- combn(row, ks, FUN = NULL, simplify=FALSE)
-# all combinations of alleles in genotypeL that can be matched to non-virtual
-        # alleles in genotypeS
-
-permutations <- combinat::permn(ks)
-# all possible orders that alleles within these combinations can go in
-
-mindist <- Inf # this variable will store the minimum sum encountered so far.
-
-for(i in 1:length(combinations)) {
-# the loop to go through every possible sum of compatible allele comparisons
-
-rowcomb <- combinations[[i]] # choose one combination of rows for this round
-
-for(l in 1:length(permutations)){ # go through all orders of this combinations of rows
-
-sum <- 0 # this is si, the sum of allele comparisons
-
-for(j in 1:ks){
-    sum <- sum + geometric.distances[rowcomb[permutations[[l]][j]],column[j]]}
-# the loop to calculate the sum for this permutation
-
-if(sum < mindist) {mindist <- sum} # is this the minimum sum found so far?
-
-}}
-
-dist <- (mindist+kl-ks)/kl
-# add 1 for each infinite virtual allele, then divide by the ploidy
-
-}}
+      #Next, find the minimum distance sum among all permutations
+      getalldist <- function(dmat, nrow){ # recursive function for going through all permutations
+        thesedist <- dmat[,1]
+        if(dim(dmat)[2] > 1){
+          newdist <- numeric(0)
+          for(i in 1:nrow){
+            newdist <- c(newdist, thesedist[i] + getalldist(dmat[-i,-1,drop=FALSE], nrow - 1))
+          }
+          thesedist <- newdist
+        }
+        return(thesedist) # returns all possible distances
+      }
+      mindist <- min(getalldist(geometric.distances, kl))
+      dist <- (mindist+kl-ks)/kl
+      # add 1 for each infinite virtual allele, then divide by the ploidy
+    }
+  }
 return(dist)
 }
 
@@ -97,22 +88,24 @@ meandistance.matrix <- function(object, samples=Samples(object),
     # subset the object so that samples can be numbered
     object <- object[samples, loci]
 
-# create an array containing all distances by locus and sample
+    # create an array containing all distances by locus and sample
     loci.matrices<-array(dim=c(length(loci),length(samples),length(samples)),
                          dimnames=list(loci,samples,samples))
+    ms <- Missing(object)
     for(L in loci){
-       for(m in 1:length(samples)){
-           for(n in m:length(samples)){
-               thisdistance <- distmetric(Genotype(object, m, L),
-                                          Genotype(object, n, L),
-                                          usatnt = Usatnts(object)[L],
-                                          missing = Missing(object),
-                                          ...)
-               loci.matrices[L,m,n] <- thisdistance
-               loci.matrices[L,n,m] <- thisdistance
-               if(progress) print(c(L, samples[m], samples[n]))
-           }
-       }
+      thisind <- genIndex(object, locus = L) # get all unique genotypes
+      un <- Usatnts(object)[L]
+      Nunique <- length(thisind$uniquegen)
+      if(progress) cat(paste("Beginning locus", L, "..."), sep = "\n")
+      for(m in 1:Nunique){ # loop through pairs of unique genotypes
+        for(n in m:Nunique){
+          thisdistance <- distmetric(thisind$uniquegen[[m]], thisind$uniquegen[[n]],
+                                     usatnt = un, missing = ms, ...)
+          loci.matrices[L, thisind$genindex == m, thisind$genindex == n] <- thisdistance
+          loci.matrices[L, thisind$genindex == n, thisind$genindex == m] <- thisdistance
+        }
+      }
+      if(progress) cat(paste("Locus", L, "complete"), sep = "\n")
     }
 
     # calculate the mean matrix across all loci
@@ -409,29 +402,38 @@ meandistance.matrix2 <- function(object, samples=Samples(object),
 
     # cycle through calculations
     for(L in loci){
-        u <- Usatnts(object)[L]
-        for(m in samples){
-            for(n in samples[match(m,samples):length(samples)]){
-                totdist <- 0 # total distance so far
-                # cycle through all unambiguous genotypes for these two samples
-                for(i in 1:length(gprobs[[m,L]][["probs"]])){
-                    for(j in 1:length(gprobs[[n,L]][["probs"]])){
-                        # raw distance
-                        d <- distmetric(
-                                 as.vector(gprobs[[m,L]][["genotypes"]][i,]),
-                                 as.vector(gprobs[[n,L]][["genotypes"]][j,]),
-                                        usatnt=u, missing=Missing(object), ...)
-                        # probability of this combination
-                        p <- gprobs[[m,L]][["probs"]][i] *
-                             gprobs[[n,L]][["probs"]][j]
-                        totdist <- totdist + (d*p)
-                    }
-                }
-                loci.matrices[L,m,n] <- totdist
-                loci.matrices[L,n,m] <- totdist
-                if(progress) print(c(L, m, n))
-            }
+      if(progress) cat(paste("Beginning locus", L, "..."), sep = "\n")
+      u <- Usatnts(object)[L]
+      thisind <- genIndex(gprobs, L) # index of unique genotypes in gprobs for this locus
+      nUnique <- length(thisind$uniquegen) # number of unique genotypes
+      udist <- matrix(NA, nrow = nUnique, ncol = nUnique) # to hold distances between unique genotypes
+      for(j in 1:nUnique){ # estimate pairwise distances between all unique genotypes
+        for(k in j:nUnique){
+          d <- distmetric(thisind$uniquegen[[j]], thisind$uniquegen[[k]],
+                          usatnt=u, missing=Missing(object), ...)
+          udist[j,k] <- d
+          udist[k,j] <- d
         }
+      }
+      for(m in samples){ # get weighted pairwise distances between samples
+        for(n in samples[match(m,samples):length(samples)]){
+          totdist <- 0 # total distance so far
+          # cycle through all unambiguous genotypes for these two samples
+          for(i in 1:length(gprobs[[m,L]][["probs"]])){
+            for(j in 1:length(gprobs[[n,L]][["probs"]])){
+              # lookup raw distance
+              d <- udist[thisind$genindex[[m]][i], thisind$genindex[[n]][j]]
+              # probability of this combination
+              p <- gprobs[[m,L]][["probs"]][i] *
+                gprobs[[n,L]][["probs"]][j]
+              totdist <- totdist + (d*p)
+            }
+          }
+          loci.matrices[L,m,n] <- totdist
+          loci.matrices[L,n,m] <- totdist
+        }
+      }
+      if(progress) cat(paste("Locus", L, "complete"), sep = "\n")
     }
 
     # calculate the mean matrix across all loci
@@ -519,13 +521,16 @@ Bruvo2.distance <- function(genotype1, genotype2, maxl=7, usatnt=2, missing=-9,
             }
             # get the difference in length
             diff <- length(genotypeL) - length(genotypeS)
+
             # get allele combinations to try
             alcomb <- function(genotype){
                 lg <- length(genotype)
-                mat <- matrix(nrow=0, ncol=lg^diff)
+                mat <- matrix(nrow=diff, ncol=lg^diff)
                 for(i in 1:diff){
-                    mat <- rbind(mat, rep(genotype, times=lg^(i-1),
-                                          each=lg^(diff-i)))
+                    mat[i,] <- rep(genotype, times=lg^(i-1), each=lg^(diff-i))
+                }
+                if(diff > 1){
+                  mat <- apply(mat, 2, sort)
                 }
                 return(mat)
             }
@@ -545,14 +550,14 @@ Bruvo2.distance <- function(genotype1, genotype2, maxl=7, usatnt=2, missing=-9,
                 if(length(unique(alleleadd[,i])) > 1){
                     # check to see if this calculation has already been done
                     for(j in 1:(i-1)){
-                        if(identical(sort(alleleadd[,i]),sort(alleleadd[,j]))){
+                        if(identical(alleleadd[,i], alleleadd[,j])){
                             distadd[i] <- distadd[j]
                             break
                         }
                     }
                 }
                 if(is.na(distadd[i])){
-                    # do the calculation is this allele combo is new
+                  # do the calculation is this allele combo is new
                 distadd[i] <- Bruvo.distance(genotypeL,
                                              c(genotypeS, alleleadd[,i]),
                                              maxl=maxl, usatnt=usatnt,
@@ -562,8 +567,7 @@ Bruvo2.distance <- function(genotype1, genotype2, maxl=7, usatnt=2, missing=-9,
             for(i in 1:length(distloss)){
                 if(length(unique(alleleloss[,i])) > 1){
                     for(j in 1:(i-1)){
-                        if(identical(sort(alleleloss[,i]),
-                                     sort(alleleloss[,j]))){
+                        if(identical(alleleloss[,i], alleleloss[,j])){
                             distloss[i] <- distloss[j]
                             break
                         }

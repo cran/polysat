@@ -12,7 +12,7 @@ export(Bruvo.distance,
        Bruvo2.distance, reformatPloidies,alleleDiversity,read.STRand,
 gendata.to.genind, Simpson.var, simAllopoly, catalanAlleles, alleleCorrelations,
        testAlGroups, mergeAlleleAssignments, recodeAllopoly, plotSSAllo,
-       processDatasetAllo, plotParamHeatmap, calcPopDiff)
+       processDatasetAllo, plotParamHeatmap, calcPopDiff, PIC)
 exportMethods(estimatePloidy, Samples, "Samples<-", Loci, "Loci<-", PopInfo,
               "PopInfo<-", PopNames, "PopNames<-", Ploidies, "Ploidies<-",
               Usatnts,
@@ -20,11 +20,11 @@ exportMethods(estimatePloidy, Samples, "Samples<-", Loci, "Loci<-", PopInfo,
               Description, "Description<-", PopNum, "PopNum<-", Genotype,
               "Genotype<-", Genotypes, "Genotypes<-", isMissing, viewGenotypes,
               editGenotypes, Present, "Present<-", Absent, "Absent<-", summary,
-              merge, pld, "pld<-", plCollapse)
+              merge, pld, "pld<-", plCollapse, genIndex)
 exportClasses(gendata, genambig, genbinary, ploidysuper, ploidymatrix, 
               ploidylocus, ploidysample, ploidyone)
 import(methods)
-importFrom("stats", "as.dist", "cutree", "fisher.test", "hclust", "kmeans", "heatmap")
+importFrom("stats", "as.dist", "cutree", "fisher.test", "hclust", "kmeans", "heatmap", "weighted.mean")
 importFrom("utils", "combn", "edit", "read.table", "stack", "write.table")
 importFrom("grDevices", "dev.off", "grey.colors", "pdf", "rainbow")
 importFrom("graphics", "axis", "image", "legend", "par", "plot", "text")
