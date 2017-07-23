@@ -262,7 +262,7 @@ deSilvaFreq <- function(object, self,
                         samples=Samples(object),
                         loci=Loci(object), initNull = 0.15,
                         initFreq=simpleFreq(object[samples,loci]),
-                        tol = 0.00000001){
+                        tol = 0.00000001, maxiter = 1e4){
     # make sure self argument has been given
     if(missing(self)) stop("Selfing rate required.")
 
@@ -484,9 +484,7 @@ deSilvaFreq <- function(object, self,
             subInitFreq <- subInitFreq * (1-initNull[L])/sum(subInitFreq)
             # get each allele frequency
             for(a in alleles){
-                p1[match(a, alleles)] <- subInitFreq[1,
-                                                     grep(a, names(subInitFreq),
-                                                          fixed=TRUE)]
+                p1[match(a, alleles)] <- subInitFreq[1,paste(L, a, sep = ".")]
             }
 
             ## Begin the EM algorithm
@@ -542,8 +540,8 @@ deSilvaFreq <- function(object, self,
                 # check for convergence
                 pB <- p1 + p2
                 pT <- p1 - p2
-                pT <- pT[pB != 0]
-                pB <- pB[pB != 0]
+                pT <- pT[abs(pB) > 1e-14]
+                pB <- pB[abs(pB) > 1e-14]
 
                 if(length(pB) == 0){
                     converge <- 1
@@ -551,6 +549,9 @@ deSilvaFreq <- function(object, self,
                     if(sum(abs(pT)/pB) <= tol){
                         converge <- 1
                     }
+                }
+                if(niter >= maxiter){
+                  converge <- 1
                 }
 
                 niter <- niter + 1
@@ -577,11 +578,13 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
                   split=".",
                                                       fixed=TRUE),
                                              stringsAsFactors=FALSE))[1,]), 
-                     global = FALSE, bootstrap = FALSE, n.bootstraps = 1000){
-    # check metric
-  if(!metric %in% c("Fst", "Gst", "Jost's D")){
-    stop("metric must be Fst, Gst, or Jost's D")
+                     global = FALSE, bootstrap = FALSE, n.bootstraps = 1000,
+                  object = NULL){
+  # check metric
+  if(!metric %in% c("Fst", "Gst", "Jost's D", "Rst")){
+    stop("metric must be Fst, Gst, Rst, or Jost's D")
   }
+  
   # check pop names
   if(!all(pops %in% row.names(freqs))){
     stop("pops must all be in row names of freqs.")
@@ -589,6 +592,10 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
   freqs <- freqs[pops,]
   # Clean up loci
   loci<-loci[loci!="Genomes"]
+  
+  if(metric == "Rst" && (is.null(object) || any(is.na(Usatnts(object)[loci])))){
+    stop("gendata object required with Usatnts for Rst metric")
+  }
   
   # internal function to get differentiation statistic from any set of two or more pops
   cpd <- function(freqs, metric, loci, bootstrap, n.boostraps){
@@ -611,8 +618,8 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
         thesegenomes <- freqs[,paste(L, "Genomes", sep=".")]
       }
       # allele frequencies for this locus
-      thesefreqs<-freqs[,grep(paste(L,".",sep=""), names(freqs),fixed=TRUE)]
-      thesefreqs <- thesefreqs[,names(thesefreqs)!=paste(L,"Genomes",sep=".")]
+      thesefreqs<-freqs[,grep(paste(L,".",sep=""), names(freqs),fixed=TRUE), drop = FALSE]
+      thesefreqs <- thesefreqs[,names(thesefreqs)!=paste(L,"Genomes",sep="."), drop = FALSE]
       # expected heterozygosity by pop
       hsByPop <- apply(as.matrix(thesefreqs), 1, function(x) 1 - sum(x^2))
       if(metric == "Fst"){
@@ -627,8 +634,41 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
         # unweighted mean Hs
         hets[L, "HS"] <- mean(hsByPop)
       }
+      if(metric == "Rst"){
+        replen <- Usatnts(object)[L] # microsatellite repeat length
+        alleles <- sapply(strsplit(grep(paste(L,".",sep=""), names(freqs),fixed=TRUE,value = TRUE), ".",
+                                   fixed = TRUE),
+                          function(x) x[2])
+        alleles <- alleles[alleles != "Genomes"]
+        alleles[alleles == "null"] <- 0
+        alleles <- as.integer(alleles)
+        if(0 %in% alleles){ # remove null alleles if they are there
+          nullfreqs <- thesefreqs[,match(0, alleles)] # frequency of null allele in each pop
+          for(pop in 1:dim(thesefreqs)[1]){
+            thesefreqs[pop,] <- thesefreqs[pop,]/(1-nullfreqs[pop]) # scale so non-null allele frequencies sum to 1
+          }
+          thesegenomes <- round(thesegenomes * (1-nullfreqs)) # remove null allele copies from total genomes
+        }
+        totgenomes <- sum(thesegenomes)
+        avgfreq <- colMeans(thesefreqs)
+        SSalleledistS <- numeric(dim(freqs)[1]) # for totaling sums of squares of allele differences for each pop
+        SSalleledistT <- 0 # for totaling sums of squares of allele differences across all pops
+        for(i in 1:(length(alleles)-1)){ # loop through all pairs of different alleles
+          for(j in (i+1):length(alleles)){
+            if(alleles[i] == 0 || alleles[j] == 0) next
+            sqdiff <- (abs(alleles[i] - alleles[j])/replen)^2 # squared difference in repeat number
+            nocc <- thesefreqs[,i] * thesefreqs[,j] * thesegenomes^2 # number of times these alleles would be compared
+            SSalleledistS <- SSalleledistS + sqdiff * nocc
+            SSalleledistT <- SSalleledistT + sqdiff * totgenomes^2 * avgfreq[i] * avgfreq[j]
+          }
+        }
+        hets[L, "HS"] <- mean(SSalleledistS / (thesegenomes * (thesegenomes - 1)))
+        hets[L, "HT"] <- SSalleledistT/(totgenomes * (totgenomes - 1))
+      }
       # estimate expected heterozygosity for panmictic pop
-      hets[L,"HT"]<-1-sum(avgfreq^2)
+      if(metric %in% c("Fst", "Gst", "Jost's D")){
+        hets[L,"HT"]<-1-sum(avgfreq^2)
+      }
       if(metric %in% c("Jost's D","Gst")){
         # harmonic mean of the sample size
         meanGenomes <- 1/mean(1/thesegenomes)
@@ -652,6 +692,10 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
         HT<-mean(thishets[,"HT"])
         HS<-mean(thishets[,"HS"])
         result[b] <- (HT-HS)/HT
+      }
+      if(metric == "Rst"){
+        R <- (thishets[,"HT"] - thishets[,"HS"])/thishets[,"HT"]
+        result[b] <- mean(R)
       }
       if(metric == "Gst"){ # calculate Gst and average across loci
         G <- (thishets[,"HTest"] - thishets[,"HSest"])/thishets[,"HTest"]
