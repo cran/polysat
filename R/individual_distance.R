@@ -296,7 +296,7 @@ genotypeProbs <- function(object, sample, locus, freq=NULL, gprob=NULL,
             } else {  ## partial selfing method
                 # get unambig genotype in terms of genlist numbers
                 ugen <- match(as.integer(results$genotypes[i,]),alleles)
-                results$probs[i] <- gprob[.indexg(ugen, length(alleles), pl)]
+                results$probs[i] <- gprob[INDEXG(ugen, length(alleles), pl)]
             }
         }
         if(selfing){
@@ -345,13 +345,8 @@ meandistance.matrix2 <- function(object, samples=Samples(object),
                 if(m2 %% 2 != 0) stop("Ploidy must be even.")
                 
                 cat("Setting up genotype probabilities...",sep="\n")
-                subfreq <- freq[p, grep(L, names(freq), fixed=TRUE)]
-                templist <- names(subfreq)[subfreq !=0]
-                templist <- strsplit(templist, split=".", fixed=TRUE)
-                alleles <- rep(0, length(templist))
-                for(i in 1:length(alleles)){
-                    alleles[i] <- templist[[i]][2]
-                }
+                subfreq <- as.matrix(freq[p, grep(paste("^", L, "\\.", sep = ""), names(freq))])
+                alleles <- gsub(paste("^", L, "\\.", sep = ""), "", colnames(subfreq))
                 # let's just not do null allelles for now
                 # (Hey, I'm trying to graduate.)
                 alleles <- sort(as.integer(alleles[alleles != "null"]))
@@ -361,20 +356,15 @@ meandistance.matrix2 <- function(object, samples=Samples(object),
                 for(j in 2:m2){
                     ng <- ng*(na1+j-1)/j
                 }
-                ag <- .genlist(ng, na1, m2)
-                temp <- .ranmul(ng, na1, ag, m2)
+                ag <- GENLIST(ng, na1, m2)
+                temp <- RANMUL(ng, na1, ag, m2)
                 rmul <- temp[[1]]
                 arep <- temp[[2]]
                 rm(temp)
-                smat <- .selfmat(ng, na1, ag, m2)
+                smat <- SELFMAT(ng, na1, ag, m2)
                 m <- m2/2
-                smatdiv <- (.G(m-1,m+1))^2
-                p1 <- rep(0, na1) # vector to hold frequencies
-                for(a in alleles){
-                    p1[match(a, alleles)] <- subfreq[1,
-                                                     grep(a, names(subfreq),
-                                                          fixed=TRUE)]
-                }
+                smatdiv <- (G(m-1,m+1))^2
+                p1 <- subfreq[1, paste(L, alleles, sep = ".")]
                 p1 <- p1/sum(p1) # normalize to sum to 1
                 rvec <- rep(0,ng)
                 for(g in 1:ng){

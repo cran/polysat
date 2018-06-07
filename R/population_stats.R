@@ -101,157 +101,6 @@ simpleFreq <- function(object, samples=Samples(object), loci=Loci(object)){
     return(freqtable)
 }
 
-# Internal functions from De Silva et al. 2005, for use in deSilvaFreq
-# and meandistance.matrix2.
-
-    # G function from de Silva et al
-    .G <- function(q, n){
-        return(factorial(n+q)/(factorial(q+1)*factorial(n-1)))
-    }
-
-    # INDEXG function from de Silva et al
-    .indexg <- function(ag1, na1, m2){
-        x <- 1 + ag1[m2] - ag1[m2-1]
-        for(q in 1:(m2-2)){
-            x <- x + .G(q,na1+1-ag1[m2-q-1]) - .G(q,na1+1-ag1[m2-q])
-        }
-        x <- x + .G(m2-1,na1) - .G(m2-1,na1+1-ag1[1])
-        return(x)
-    }
-
-    # GENLIST function from de Silva et al
-    .genlist <- function(ng, na1, m2){
-        # set up temporary genotype vector and genotype array
-        ag1 <- rep(1, m2)
-        ag <- array(0, dim=c(ng, m2))
-
-        # fill genotype array with all possible combinations
-        g <- 1
-        ag[g,] <- ag1
-        a <- m2
-        while(a>0){
-            if(ag1[a]==na1){
-                a <- a-1
-            } else {
-                if(a > 0){
-                    ag1[a] <- ag1[a] + 1
-                    if(a < m2){
-                        for(a1 in (a+1):m2){
-                            ag1[a1] <- ag1[a]
-                        }
-                    }
-                    g <- g+1
-                    ag[g,] <- ag1
-                    a <- m2
-                }
-            }
-        }
-        return(ag)
-    }
-
-    # RANMUL function
-    .ranmul <- function(ng, na1, ag, m2){
-        # RANMUL subroutine
-        # rmul is multiplier to get genotype freq under random mating
-        # arep shows how many copies of each allele each genotype has
-        rmul <- rep(1, ng)
-        arep <- matrix(0, nrow=ng, ncol=na1)
-        for(g in 1:ng){
-            ag1 <- ag[g,]
-            arep[g,ag1[1]] <- 1
-            for(j in 2:m2){
-                rmul[g] <- rmul[g]*j
-                if(ag1[j] == ag1[j-1]){
-                    arep[g,ag1[j]] <- arep[g,ag1[j]] + 1
-                    rmul[g] <- rmul[g]/arep[g,ag1[j]]
-                } else {
-                    arep[g,ag1[j]] <- 1
-                }
-            }
-        }
-        return(list(rmul, arep))
-    }
-
-    # SELFMAT function
-    .selfmat <- function(ng, na1, ag, m2){
-        # SELFMAT subroutine
-        # smat is selfing matrix, and smatdiv is divisor for selfing matrix
-        m <- m2/2
-        smat <- matrix(0, nrow=ng, ncol=ng)
-        al1 <- rep(0, m)
-        al2 <- rep(0, m)
-        ag1 <- rep(0, m2)
-        for(g in 1:ng){
-            al1[1] <- 1
-            if(m > 1){
-                for(j in 2:m) al1[j] <- al1[j-1] + 1
-            }
-            al1[m] <- al1[m] - 1
-            a1 <- m
-            while(a1 > 0){
-                if(al1[a1] == (m+a1)){
-                    a1 <- a1 - 1
-                } else {
-                    if(a1 > 0){
-                        al1[a1] <- al1[a1] + 1
-                        if(a1 < m){
-                            for(a3 in (a1+1):m) al1[a3] <- al1[a3-1]+1
-                        }
-                        al2[1] <- 1
-                        if(m > 1){
-                            for(j in 2:m) al2[j] <- al2[j-1] + 1
-                        }
-                        al2[m] <- al2[m]-1
-                        a2 <- m
-                        while(a2 > 0){
-                            if(al2[a2] == (m+a2)){
-                                a2 <- a2 - 1
-                            } else {
-                                if(a2 > 0){
-                                    al2[a2] <- al2[a2] + 1
-                                    if(a2 < m){
-                                        for(a3 in (a2+1):m) al2[a3]<-al2[a3-1]+1
-                                    }
-                                    #UPDATESMAT subroutine
-                                    j1 <- 1
-                                    j2 <- 1
-                                    k1 <- al1[j1]
-                                    k2 <- al2[j2]
-                                    for(i in 1:m2){
-                                        if(k1 < k2){
-                                            ag1[i] <- ag[g,k1]
-                                            if(j1 == m){
-                                                k1 <- 999
-                                            } else {
-                                                j1 <- j1 + 1
-                                                k1 <- al1[j1]
-                                            }
-                                        } else {
-                                            ag1[i] <- ag[g,k2]
-                                            if(j2 == m){
-                                                k2 <- 999
-                                            } else {
-                                                j2 <- j2 + 1
-                                                k2 <- al2[j2]
-                                            }
-                                        }
-                                    }
-                                    g2 <- .indexg(ag1, na1, m2)
-                                    smat[g,g2] <- smat[g,g2] + 1
-                                    # end UPDATESMAT subroutine
-                                    a2 <- m
-                                }
-                            }
-                        }
-                        a1 <- m
-                    }
-                }
-            }
-        }
-        return(smat)
-    }
-
-
 # Iterative estimation of allele frequencies under polysomic inheritance,
 # with a uniform, even-numbered ploidy and a known selfing rate.
 # Much of this code is translated directly from:
@@ -263,314 +112,313 @@ deSilvaFreq <- function(object, self,
                         loci=Loci(object), initNull = 0.15,
                         initFreq=simpleFreq(object[samples,loci]),
                         tol = 0.00000001, maxiter = 1e4){
-    # make sure self argument has been given
-    if(missing(self)) stop("Selfing rate required.")
-
-    # make sure initFreq is in right format
-    if(!"Genomes" %in% names(initFreq))
-      stop("initFreq must have single Genomes column.")
-
-    # convert object to genambig if necessary
-    if("genbinary" %in% class(object)) object <- genbinary.to.genambig(object,
-                                                                       samples,
-                                                                       loci)
-
-    # get the ploidy (m2), and check that there is only one and that it is even
-    m2 <- unique(as.vector(Ploidies(object,samples,loci)))
-    if(length(m2) != 1)
-      stop("Only one ploidy allowed.  Try running subsets of data one ploidy at a time.")
-    if(is.na(m2)) stop("Function requires information in Ploidies slot.")
-    if(m2 %% 2 != 0) stop("Ploidy must be even.")
-
-    # check and set up initNull
-    if(!length(initNull) %in% c(1,length(loci)))
-        stop("Need single value for initNull or one value per locus.")
-    if(length(initNull) == 1)
-        initNull <- rep(initNull, times=length(loci))
-    if(is.null(names(initNull)))
-        names(initNull) <- loci
-
-    # calculate the number of alleles from one gamete
-    # (from de Silva et al's INIT subroutine)
-    m <- m2/2
-
-    # get the populations that will be used
-    pops <- PopNames(object)[unique(PopInfo(object)[samples])]
-    if(!identical(pops, row.names(initFreq)))
-        stop("Population names in initFreq don't match those in object.")
-
-    # set up the data frame where final allele frequencies will be stored
-    # has columns from initFreq, plus columns for nulls
-    finalfreq <- data.frame(row.names=pops, Genomes=initFreq$Genomes,
-                            matrix(0, nrow=length(pops),
-                                   ncol=dim(initFreq)[2]-1+length(loci),
-                                   dimnames=list(NULL, sort(c(
+  # make sure self argument has been given
+  if(missing(self)) stop("Selfing rate required.")
+  
+  # make sure initFreq is in right format
+  if(!"Genomes" %in% names(initFreq))
+    stop("initFreq must have single Genomes column.")
+  
+  # convert object to genambig if necessary
+  if("genbinary" %in% class(object)) object <- genbinary.to.genambig(object,
+                                                                     samples,
+                                                                     loci)
+  
+  # get the ploidy (m2), and check that there is only one and that it is even
+  m2 <- unique(as.vector(Ploidies(object,samples,loci)))
+  if(length(m2) != 1)
+    stop("Only one ploidy allowed.  Try running subsets of data one ploidy at a time.")
+  if(is.na(m2)) stop("Function requires information in Ploidies slot.")
+  if(m2 %% 2 != 0) stop("Ploidy must be even.")
+  
+  # check and set up initNull
+  if(!length(initNull) %in% c(1,length(loci)))
+    stop("Need single value for initNull or one value per locus.")
+  if(length(initNull) == 1)
+    initNull <- rep(initNull, times=length(loci))
+  if(is.null(names(initNull)))
+    names(initNull) <- loci
+  
+  # calculate the number of alleles from one gamete
+  # (from de Silva et al's INIT subroutine)
+  m <- m2 %/% 2L
+  
+  # get the populations that will be used
+  pops <- PopNames(object)[unique(PopInfo(object)[samples])]
+  if(!identical(pops, row.names(initFreq)))
+    stop("Population names in initFreq don't match those in object.")
+  
+  # set up the data frame where final allele frequencies will be stored
+  # has columns from initFreq, plus columns for nulls
+  finalfreq <- data.frame(row.names=pops, Genomes=initFreq$Genomes,
+                          matrix(0, nrow=length(pops),
+                                 ncol=dim(initFreq)[2]-1+length(loci),
+                                 dimnames=list(NULL, sort(c(
                                    paste(loci, ".null", sep=""),
                                    names(initFreq)[2:dim(initFreq)[2]])))))
-
-    # get the divisor for the selfing matrices
-    smatdiv <- (.G(m-1,m+1))^2
-
-    # INDEXF function from de Silva et al
-    # af1 = vector of alleles in phenotype
-    # m = number of observable alleles in phenotype
-    # na = number of alleles, calculated for each locus
-    indexf <- function(m, af1, na){
-        x <- 1
-        if(m == 1){
-            x <- x + af1[1]
-        } else {
-            if ( m >1 ){
-                for(q in 1:(m-1)){
-                    x <- x + .G(q-1,na-q+1)
-                }
-                x <- x + .G(m-1,na+1-m) - .G(m-1,na+2-m-af1[1])
-                if(m > 2){
-                    for(q in 1:(m-2)){
-                        x <- x + .G(q,na-q-af1[m-q-1]) -
-                            .G(q,na+1-q-af1[m-q])
-                    }
-                }
-                x <- x + af1[m] - af1[m-1]
-            }
+  
+  # get the divisor for the selfing matrices
+  smatdiv <- (G(m-1,m+1))^2
+  
+  # INDEXF function from de Silva et al
+  # af1 = vector of alleles in phenotype
+  # m = number of observable alleles in phenotype
+  # na = number of alleles, calculated for each locus
+  indexf <- function(m, af1, na){
+    x <- 1L
+    if(m == 1){
+      x <- x + af1[1]
+    } else {
+      if(m > 1){
+        for(q in 1:(m-1)){
+          x <- x + G(q-1,na-q+1)
         }
-        return(x)
+        x <- x + G(m-1,na+1-m) - G(m-1,na+2-m-af1[1])
+        if(m > 2){
+          for(q in 1:(m-2)){
+            x <- x + G(q,na-q-af1[m-q-1]) -
+              G(q,na+1-q-af1[m-q])
+          }
+        }
+        x <- x + af1[m] - af1[m-1]
+      }
     }
-
-    # FENLIST function
-    fenlist <- function(na){
-        # set up temporary holding vector for phenotpes (FENLIST)
-        af1 <- rep(0, m2)
-        # set up array to contain all phenotypes (FENLIST)
-        af <- array(0, dim=c(1, m2))
-        # set up vector for number of alleles in each phenotype (FENLIST)
-        naf <- integer(0)
-
-        # fill in af and naf (FENLIST)
-        # This is done with rbind rather than setting up whole array,
-        # because the method for calculating the number of phenotypes
-        # doesn't seem to work for certain numbers of alleles.
-        f <- 1
-        naf <- 0
-        for(m in 1:min(m2, na)){
-            af1[1] <- 1
-            if(m > 1){
-                for(j in 2:m){
-                    af1[j] <- af1[j-1] + 1
-                }
+    return(x)
+  }
+  
+  # FENLIST function
+  fenlist <- function(na){
+    # set up temporary holding vector for phenotpes (FENLIST)
+    af1 <- rep(0L, m2)
+    # set up array to contain all phenotypes (FENLIST)
+    af <- array(0L, dim=c(1, m2))
+    # set up vector for number of alleles in each phenotype (FENLIST)
+    naf <- integer(0)
+    
+    # fill in af and naf (FENLIST)
+    # This is done with rbind rather than setting up whole array,
+    # because the method for calculating the number of phenotypes
+    # doesn't seem to work for certain numbers of alleles.
+    f <- 1L
+    naf <- 0L
+    for(m in 1:min(m2, na)){
+      af1[1] <- 1L
+      if(m > 1){
+        for(j in 2:m){
+          af1[j] <- af1[j-1] + 1L
+        }
+      }
+      f <- f + 1L
+      naf[f] <-  m
+      af <- rbind(af, af1)
+      a <- m
+      while(a > 0){
+        if(af1[a] == (na+a-m)){
+          a <- a - 1L
+        } else {
+          if(a > 0){
+            af1[a] <- af1[a] + 1L
+            if(a < m){
+              for(a1 in (a+1):m) af1[a1] <- af1[a1-1] + 1L
             }
-            f <- f + 1
-            naf[f] <-  m
+            f <- f + 1L
+            naf[f] <- m
             af <- rbind(af, af1)
             a <- m
-            while(a > 0){
-                if(af1[a] == (na+a-m)){
-                    a <- a - 1
-                } else {
-                    if(a > 0){
-                        af1[a] <- af1[a] + 1
-                        if(a < m){
-                            for(a1 in (a+1):m) af1[a1] <- af1[a1-1] + 1
-                        }
-                        f <- f + 1
-                        naf[f] <- m
-                        af <- rbind(af, af1)
-                        a <- m
-                    }
-                }
-            }
+          }
         }
-
-        return(list(af, naf))
+      }
     }
-
-    # CONVMAT function
-    convmat <- function(ng, nf, na1, ag){
-        na <- na1-1
-        af1 <- rep(0, m2)
-        # CONVMAT subroutine - make a matrix for conversion from
-        # genotypes to phenotypes
-        cmat <- matrix(0, nrow=nf, ncol=ng)
+    
+    return(list(af, naf))
+  }
+  
+  # CONVMAT function
+  convmat <- function(ng, nf, na1, ag){
+    na <- na1 - 1L
+    af1 <- rep(0L, m2)
+    # CONVMAT subroutine - make a matrix for conversion from
+    # genotypes to phenotypes
+    cmat <- matrix(0L, nrow=nf, ncol=ng)
+    for(g in 1:ng){
+      ag1 <- ag[g,]
+      # find the phenotype (af1) that matches this genotype (ag1)
+      if(ag1[1] == na1){
+        naf1 <- 0L # this is the homozygous null genotype
+      } else {
+        naf1 <- 1L
+        af1[naf1] <- ag1[1]
+        for(a in 2:m2){
+          if(ag1[a] == na1) break # exit loop if null allele
+          if(ag1[a] > af1[naf1]){
+            naf1 <- naf1 + 1L
+            af1[naf1] <- ag1[a]
+          }
+        }
+      }
+      # fill in the extra alleles with zeros
+      if(naf1 < m2){
+        for(j in (naf1 + 1):m2){
+          af1[j] <- 0L
+        }
+      }
+      f <- indexf(naf1, af1, na) # This is the one phenotype to match
+      # this genotype.
+      cmat[f,g] <- 1L
+    }
+    return(cmat)
+  }
+  
+  # Loop to do calculations one locus and population at a time
+  for(L in loci){
+    cat(paste("Starting", L), sep="\n")
+    
+    ## Begin looping through populations
+    for(pop in pops){
+      cat(paste("Starting", L, pop), sep="\n")
+      # get a list of samples in this pop being analyzed
+      psamples <- Samples(object, populations=pop)[!isMissing(object,
+                                                              Samples(object, populations=pop),
+                                                              L)]
+      psamples <- psamples[psamples %in% samples]
+      
+      # extract the initial allele frequencies and add a null
+      subInitFreq <- initFreq[pop, grep(paste("^", L,"\\.",sep=""),
+                                        names(initFreq))]
+      
+      # set up matrices if this has not already been done
+      templist <- names(subInitFreq)[subInitFreq !=0]
+      templist <- strsplit(templist, split=".", fixed=TRUE)
+      alleles <- rep(0L, length(templist))
+      for(i in 1:length(alleles)){
+        alleles[i] <- as.integer(templist[[i]][2])
+      }
+      alleles <- sort(alleles)
+      na <- length(alleles)
+      
+      # get the number of alleles with a null
+      na1 <- na + 1L
+      # get the number of genotypes (from the GENLIST function)
+      ng <- na1
+      for(j in 2:m2){
+        ng <- ng * (na1 + j - 1L) / j
+      }
+      
+      ag <- GENLIST(ng, na1, m2)
+      temp <- fenlist(na)
+      af <- temp[[1]]
+      naf <- temp[[2]]
+      nf <- length(naf)
+      temp <- RANMUL(ng, na1, ag, m2)
+      rmul <- temp[[1]]
+      arep <- temp[[2]]
+      smatt <- SELFMAT(ng, na1, ag, m2)/smatdiv
+      cmat <- convmat(ng, nf, na1, ag)
+      rm(temp)
+      
+      # calculate pp, the frequency of each phenotype in this population
+      pp <- rep(0, nf)
+      for(s in psamples){
+        phenotype <- sort(unique(Genotype(object, s, L)))
+        phenotype <- match(phenotype, alleles)
+        f <- indexf(length(phenotype), phenotype, na)
+        pp[f] <- pp[f] + 1
+      }
+      pp <- pp/sum(pp)
+      
+      # Get initial allele frequencies
+      p1 <- rep(0, na1) # vector to hold frequencies
+      p1[na1] <- initNull[L] # add null freq to the last position
+      # make sure everything will sum to 1
+      subInitFreq <- subInitFreq * (1 - initNull[L])/sum(subInitFreq)
+      # get each allele frequency
+      for(a in alleles){
+        p1[match(a, alleles)] <- subInitFreq[1,paste(L, a, sep = ".")]
+      }
+      
+      ## Begin the EM algorithm
+      converge <- 0
+      niter <- 1L
+      oneg <- rep(1, ng)
+      while(converge == 0){
+        # Expectation step
+        # GPROBS subroutine
+        pa <- rep(0, na1)
+        pa[na1] <- 1
+        for(j in 1:na){
+          pa[j] <- p1[j]
+          pa[na1] <- pa[na1]-p1[j]
+          # it seems like this is the same as pa <- p1
+          # unless p1 is not supposed to have the null allele
+          # (conflicting information in orignal code comments)
+        }
+        rvec <- rep(0, ng)
         for(g in 1:ng){
-            ag1 <- ag[g,]
-            # find the phenotype (af1) that matches this genotype (ag1)
-            if(ag1[1] == na1){
-                naf1 <- 0 # this is the homozygous null genotype
-            } else {
-                naf1 <- 1
-                af1[naf1] <- ag1[1]
-                for(a in 2:m2){
-                    if(ag1[a] == na1) break # exit loop if null allele
-                    if(ag1[a] > af1[naf1]){
-                        naf1 <- naf1 + 1
-                        af1[naf1] <- ag1[a]
-                    }
-                }
-            }
-            # fill in the extra alleles with zeros
-            if(naf1 < m2){
-                for(j in (naf1 + 1):m2){
-                    af1[j] <- 0
-                }
-            }
-            f <- indexf(naf1, af1, na) # This is the one phenotype to match
-                                       # this genotype.
-            cmat[f,g] <- 1
+          rvec[g] <- rmul[g]
+          for(j in 1:m2){
+            rvec[g] <- rvec[g]*pa[ag[g,j]]
+          }
+          # This gives prob of genotype by multiplying
+          # probs of alleles and coefficients for a multinomial
+          # distribution.
         }
-        return(cmat)
-    }
-
-    # Loop to do calculations one locus and population at a time
-    for(L in loci){
-        cat(paste("Starting", L), sep="\n")
-
-        ## Begin looping through populations
-        for(pop in pops){
-            cat(paste("Starting", L, pop), sep="\n")
-            # get a list of samples in this pop being analyzed
-            psamples <- Samples(object, populations=pop)[!isMissing(object,
-                                        Samples(object, populations=pop),
-                                        L)]
-            psamples <- psamples[psamples %in% samples]
-
-            # extract the initial allele frequencies and add a null
-            subInitFreq <- initFreq[pop, grep(paste(L,".",sep=""),
-                                              names(initFreq), fixed=TRUE)]
-
-            # set up matrices if this has not already been done
-                templist <- names(subInitFreq)[subInitFreq !=0]
-                templist <- strsplit(templist, split=".", fixed=TRUE)
-                alleles <- rep(0, length(templist))
-                for(i in 1:length(alleles)){
-                    alleles[i] <- as.integer(templist[[i]][2])
-                }
-            alleles <- sort(alleles)
-                na <- length(alleles)
-
-                # get the number of alleles with a null
-                na1 <- na + 1
-                # get the number of genotypes (from the GENLIST function)
-                ng <- na1
-                for(j in 2:m2){
-                    ng <- ng*(na1+j-1)/j
-                }
-
-            ag <- .genlist(ng, na1, m2)
-            temp <- fenlist(na)
-            af <- temp[[1]]
-            naf <- temp[[2]]
-            nf <- length(naf)
-            temp <- .ranmul(ng, na1, ag, m2)
-            rmul <- temp[[1]]
-            arep <- temp[[2]]
-            smatt <- .selfmat(ng, na1, ag, m2)/smatdiv
-            cmat <- convmat(ng, nf, na1, ag)
-            rm(temp)
-
-            # calculate pp, the frequency of each phenotype in this population
-            pp <- rep(0, nf)
-            for(s in psamples){
-                phenotype <- sort(unique(Genotype(object, s, L)))
-                phenotype <- match(phenotype, alleles)
-                f <- indexf(length(phenotype), phenotype, na)
-                pp[f] <- pp[f] + 1
-            }
-            pp <- pp/sum(pp)
-
-            # Get initial allele frequencies
-            p1 <- rep(0, na1) # vector to hold frequencies
-            p1[na1] <- initNull[L] # add null freq to the last position
-            # make sure everything will sum to 1
-            subInitFreq <- subInitFreq * (1-initNull[L])/sum(subInitFreq)
-            # get each allele frequency
-            for(a in alleles){
-                p1[match(a, alleles)] <- subInitFreq[1,paste(L, a, sep = ".")]
-            }
-
-            ## Begin the EM algorithm
-            converge <- 0
-            niter <- 1
-            oneg <- rep(1, ng)
-            while(converge == 0){
-                # Expectation step
-                # GPROBS subroutine
-                pa <- rep(0, na1)
-                pa[na1] <- 1
-                for(j in 1:na){
-                    pa[j] <- p1[j]
-                    pa[na1] <- pa[na1]-p1[j]
-                    # it seems like this is the same as pa <- p1
-                    # unless p1 is not supposed to have the null allele
-                    # (conflicting information in orignal code comments)
-                }
-                rvec <- rep(0, ng)
-                for(g in 1:ng){
-                    rvec[g] <- rmul[g]
-                    for(j in 1:m2){
-                        rvec[g] <- rvec[g]*pa[ag[g,j]]
-                    }
-                    # This gives prob of genotype by multiplying
-                    # probs of alleles and coefficients for a multinomial
-                    # distribution.
-                }
-
-                # make an identity matrix
-                id <- diag(nrow=ng)
-                # calculate gprob using selfing and outcrossing matrices
-                s3 <- id - self * smatt
-                s3inv <- solve(s3)
-                gprob <- (1-self) * s3inv %*% rvec
-                # end GPROBS
-
-                # equation (12) from the paper
-                xx1 <- matrix(0, nrow=nf, ncol=ng)
-                for(i in 1:nf){
-                    xx1[i,] <- cmat[i,] * gprob
-                }
-                xx2 <- xx1 %*% oneg
-                xx3 <- matrix(0, nrow=nf, ncol=ng)
-                for(i in 1:ng){
-                    xx3[,i] <- xx1[,i] * (xx2^(-1))
-                }
-                EP <- t(xx3) %*% pp
-
-                # Maximization step
-                p2 <- t(arep) %*% EP/m2
-
-                # check for convergence
-                pB <- p1 + p2
-                pT <- p1 - p2
-                pT <- pT[abs(pB) > 1e-14]
-                pB <- pB[abs(pB) > 1e-14]
-
-                if(length(pB) == 0){
-                    converge <- 1
-                } else {
-                    if(sum(abs(pT)/pB) <= tol){
-                        converge <- 1
-                    }
-                }
-                if(niter >= maxiter){
-                  converge <- 1
-                }
-
-                niter <- niter + 1
-                p1 <- p2
-            }
-
-            # write frequencies in p2 to finalfreqs
-            for(a in alleles){
-                finalfreq[pop, match(paste(L, a, sep="."), names(finalfreq))]<-
-                    p2[match(a, alleles)]
-            }
-            finalfreq[pop, match(paste(L, "null", sep="."), names(finalfreq))]<-
-                p2[na1]
-            # print the number of reps
-            cat(paste(niter-1, "repetitions for", L, pop),
-                 sep="\n")
+        
+        # make an identity matrix
+        id <- diag(nrow=ng)
+        # calculate gprob using selfing and outcrossing matrices
+        s3 <- id - self * smatt
+        gprob <- (1-self) * solve(s3, rvec)
+        # end GPROBS
+        
+        # equation (12) from the paper
+        xx1 <- matrix(0, nrow=nf, ncol=ng)
+        for(i in 1:nf){
+          xx1[i,] <- cmat[i,] * gprob
         }
+        xx2 <- xx1 %*% oneg
+        xx3 <- matrix(0, nrow=nf, ncol=ng)
+        for(i in 1:ng){
+          xx3[,i] <- xx1[,i] * (xx2^(-1))
+        }
+        EP <- t(xx3) %*% pp
+        
+        # Maximization step
+        p2 <- t(arep) %*% EP/m2
+        
+        # check for convergence
+        pB <- p1 + p2
+        pT <- p1 - p2
+        pT <- pT[abs(pB) > 1e-14]
+        pB <- pB[abs(pB) > 1e-14]
+        
+        if(length(pB) == 0){
+          converge <- 1
+        } else {
+          if(sum(abs(pT)/pB) <= tol){
+            converge <- 1
+          }
+        }
+        if(niter >= maxiter){
+          converge <- 1
+        }
+        
+        niter <- niter + 1L
+        p1 <- p2
+      }
+      
+      # write frequencies in p2 to finalfreqs
+      for(a in alleles){
+        finalfreq[pop, match(paste(L, a, sep="."), names(finalfreq))]<-
+          p2[match(a, alleles)]
+      }
+      finalfreq[pop, match(paste(L, "null", sep="."), names(finalfreq))]<-
+        p2[na1]
+      # print the number of reps
+      cat(paste(niter-1, "repetitions for", L, pop),
+          sep="\n")
     }
-    return(finalfreq)
+  }
+  return(finalfreq)
 }
 
 calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
@@ -618,7 +466,7 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
         thesegenomes <- freqs[,paste(L, "Genomes", sep=".")]
       }
       # allele frequencies for this locus
-      thesefreqs<-freqs[,grep(paste(L,".",sep=""), names(freqs),fixed=TRUE), drop = FALSE]
+      thesefreqs<-freqs[,grep(paste("^", L,"\\.",sep=""), names(freqs)), drop = FALSE]
       thesefreqs <- thesefreqs[,names(thesefreqs)!=paste(L,"Genomes",sep="."), drop = FALSE]
       # expected heterozygosity by pop
       hsByPop <- apply(as.matrix(thesefreqs), 1, function(x) 1 - sum(x^2))
@@ -636,7 +484,7 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
       }
       if(metric == "Rst"){
         replen <- Usatnts(object)[L] # microsatellite repeat length
-        alleles <- sapply(strsplit(grep(paste(L,".",sep=""), names(freqs),fixed=TRUE,value = TRUE), ".",
+        alleles <- sapply(strsplit(grep(paste("^", L,"\\.", sep = ""), names(freqs), value = TRUE), ".",
                                    fixed = TRUE),
                           function(x) x[2])
         alleles <- alleles[alleles != "Genomes"]
@@ -763,9 +611,8 @@ write.freq.SPAGeDi <- function(freqs, usatnts, file="", digits=2,
 
     for(L in loci){
         # find the alleles
-        alleles <- as.matrix(as.data.frame(strsplit(names(freqs)[grep(paste(L,".",sep=""),
-                                                            names(freqs),
-                                                            fixed=TRUE)],
+        alleles <- as.matrix(as.data.frame(strsplit(names(freqs)[grep(paste("^", L,"\\.",sep=""),
+                                                            names(freqs))],
                                           split=".", fixed=TRUE))[2,])
         alleles <- as.vector(alleles)
         if(genbyloc){
@@ -788,10 +635,10 @@ write.freq.SPAGeDi <- function(freqs, usatnts, file="", digits=2,
         # make a weighted average of allele frequencies across populations
         if(genbyloc){
           genomes <- freqs[[paste(L, "Genomes", sep=".")]]
-          locindex <- grep(paste(L,".",sep=""), names(freqs),fixed=TRUE)
+          locindex <- grep(paste("^", L, "\\.", sep=""), names(freqs))
           locindex <- locindex[!locindex %in% grep("Genomes", names(freqs))]
         } else {
-          locindex <- grep(paste(L,".",sep=""), names(freqs),fixed=TRUE)
+          locindex <- grep(paste("^", L, "\\.", sep=""), names(freqs))
         }
         avgfreq <- (genomes %*% as.matrix(freqs[,locindex])) / sum(genomes)
         # add frequencies to list
@@ -831,7 +678,7 @@ freq.to.genpop <- function(freqs, pops=row.names(freqs),
     # get an index of columns containing these loci
     loccol <- integer(0)
     for(L in loci){
-        loccol <- c(loccol, grep(paste(L,".",sep=""), names(freqs), fixed=TRUE))
+        loccol <- c(loccol, grep(paste("^", L, "\\.",sep=""), names(freqs)))
     }
     # get a table just for these populations and loci
     subfreq <- freqs[pops, loccol]
@@ -1011,7 +858,8 @@ PIC <- function(freqs, pops=row.names(freqs),
   
   # function to get PIC for one locus and pop
   pic <- function(fr){
-    if(abs(sum(fr) - 1) > 1e-14) stop("Allele frequencies don't sum to 1.")
+    if(any(is.na(fr))) return(NA)
+    if(!isTRUE(all.equal(sum(fr), 1))) stop("Allele frequencies don't sum to 1.")
     sq <- fr^2 # square each frequncy to get p_i^2 and p_j^2
     nAl <- length(fr) # number of alleles
     # matrix of the squares multiplied by each other
@@ -1025,10 +873,10 @@ PIC <- function(freqs, pops=row.names(freqs),
   
   # loop through loci 
   for(L in loci){
-    lcol <- grep(paste(L, ".", sep = ""), dimnames(freqs)[[2]]) # columns for this locus
+    lcol <- grep(paste("^", L, "\\.", sep = ""), dimnames(freqs)[[2]]) # columns for this locus
     if(length(lcol) == 0) stop(paste("Locus", L, "not found in freqs."))
     if(GbL){
-      lgencol <- grep(paste(L, "Genomes", sep = "."), dimnames(freqs)[[2]])
+      lgencol <- grep(paste("^", L, "\\.Genomes", sep = ""), dimnames(freqs)[[2]])
       lcol <- lcol[lcol != lgencol]
     }
     if(bypop){ # get PIC for each population for this locus
