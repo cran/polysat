@@ -84,7 +84,7 @@ digits.
 A file is written but no value is returned.
 }
 \references{
-  \url{http://ebe.ulb.ac.be/ebe/SPAGeDi.html}
+  \url{https://ebe.ulb.ac.be/ebe/SPAGeDi.html}
 
   Hardy, O. J. and Vekemans, X. (2002) SPAGeDi: a versatile computer
   program to analyse spatial genetic structure at the individual or
@@ -117,9 +117,15 @@ PopInfo(mygendata) <- c(1,1,2,2)
 myspatcoord <- data.frame(X=c(27,29,24,30), Y=c(44,41,45,46),
                           row.names=c("ind1","ind2","ind3","ind4"))
 
+\dontrun{
 # write a file
 write.SPAGeDi(mygendata, spatcoord = myspatcoord,
               file="SpagOutExample.txt")
+}
+\dontshow{
+write.SPAGeDi(mygendata, spatcoord = myspatcoord,
+              file=tempfile())
+}
 }
 \keyword{ file }
 

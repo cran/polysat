@@ -46,7 +46,7 @@ A \code{"genambig"} object containing genotypes, locus and sample names,
 population names, and population identities from the file.
 }
 \references{
-  \url{http://www.vgl.ucdavis.edu/informatics/strand.php/}
+  \url{https://vgl.ucdavis.edu/STRand}
 
   Toonen, R. J. and Hughes, S. (2001) Increased Throughput for Fragment
   Analysis on ABI Prism 377 Automated Sequencer Using a Membrane Comb
@@ -68,19 +68,20 @@ strtemp <- data.frame(Pop=c("P1","P1","P2","P2"),
                       Ind=c("a","b","a","b"),
                       LocD=c("0","172/174","170/172/178*","172/176"),
                       LocG=c("130/136/138/142*","132/136","138","132/140/144*"))
-write.table(strtemp, file="strtemp.txt", sep="\t",
+myfile <- tempfile()
+write.table(strtemp, file=myfile, sep="\t",
             row.names=FALSE, quote=FALSE)
 
 # read the file
-mydata <- read.STRand("strtemp.txt")
+mydata <- read.STRand(myfile)
 viewGenotypes(mydata)
 PopNames(mydata)
 
 # alternative example with popInSam=FALSE
 strtemp$Ind <- c("OH1","OH5","MT4","MT7")
-write.table(strtemp, file="strtemp.txt", sep="\t",
+write.table(strtemp, file=myfile, sep="\t",
             row.names=FALSE, quote=FALSE)
-mydata <- read.STRand("strtemp.txt", popInSam=FALSE)
+mydata <- read.STRand(myfile, popInSam=FALSE)
 Samples(mydata)
 PopNames(mydata)
 }

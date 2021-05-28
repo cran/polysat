@@ -422,12 +422,9 @@ deSilvaFreq <- function(object, self,
 }
 
 calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
-                  loci=unique(as.matrix(as.data.frame(strsplit(names(freqs),
-                  split=".",
-                                                      fixed=TRUE),
-                                             stringsAsFactors=FALSE))[1,]), 
-                     global = FALSE, bootstrap = FALSE, n.bootstraps = 1000,
-                  object = NULL){
+                      loci=unique(gsub("\\..*$", "", names(freqs))), 
+                      global = FALSE, bootstrap = FALSE, n.bootstraps = 1000,
+                      object = NULL){
   # check metric
   if(!metric %in% c("Fst", "Gst", "Jost's D", "Rst")){
     stop("metric must be Fst, Gst, Rst, or Jost's D")
@@ -465,6 +462,7 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
       } else {
         thesegenomes <- freqs[,paste(L, "Genomes", sep=".")]
       }
+      nsubpop <- length(thesegenomes)
       # allele frequencies for this locus
       thesefreqs<-freqs[,grep(paste("^", L,"\\.",sep=""), names(freqs)), drop = FALSE]
       thesefreqs <- thesefreqs[,names(thesefreqs)!=paste(L,"Genomes",sep="."), drop = FALSE]
@@ -501,7 +499,7 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
         avgfreq <- colMeans(thesefreqs)
         SSalleledistS <- numeric(dim(freqs)[1]) # for totaling sums of squares of allele differences for each pop
         SSalleledistT <- 0 # for totaling sums of squares of allele differences across all pops
-        for(i in 1:(length(alleles)-1)){ # loop through all pairs of different alleles
+        for(i in seq_len(length(alleles)-1)){ # loop through all pairs of different alleles
           for(j in (i+1):length(alleles)){
             if(alleles[i] == 0 || alleles[j] == 0) next
             sqdiff <- (abs(alleles[i] - alleles[j])/replen)^2 # squared difference in repeat number
@@ -522,7 +520,7 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
         meanGenomes <- 1/mean(1/thesegenomes)
         # Nei and Chesser's (1983) estimates of expected heterozygosity
         hets[L, "HSest"] <- hets[L, "HS"] * meanGenomes/(meanGenomes - 1)
-        hets[L, "HTest"] <- hets[L, "HT"] + hets[L, "HSest"] / (2*meanGenomes)
+        hets[L, "HTest"] <- hets[L, "HT"] + hets[L, "HSest"] / (nsubpop * meanGenomes)
       }
     }
     # set up vector to contain results, and bootstrapping
@@ -530,7 +528,7 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
       n.bootstraps <- 1
     }
     result <- numeric(n.bootstraps)
-    for(b in 1:n.bootstraps){ # loop through bootstraps (just one if not bootstrapping)
+    for(b in seq_len(n.bootstraps)){ # loop through bootstraps (just one if not bootstrapping)
       if(bootstrap){
         thishets <- hets[sample(loci, replace = TRUE),] # H matrix with bootstrapped set of loci
       } else {
@@ -543,15 +541,26 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
       }
       if(metric == "Rst"){
         R <- (thishets[,"HT"] - thishets[,"HS"])/thishets[,"HT"]
+        if(any(is.na(R))){
+          warning(paste("Monomorphic marker", paste(names(R)[is.na(R)], collapse = " "),
+                        "ignored in comparison of", paste(rownames(freqs), collapse = " ")))
+          R <- R[!is.na(R)]
+        }
         result[b] <- mean(R)
       }
       if(metric == "Gst"){ # calculate Gst and average across loci
         G <- (thishets[,"HTest"] - thishets[,"HSest"])/thishets[,"HTest"]
+        if(any(is.na(G))){
+          warning(paste("Monomorphic marker", paste(names(G)[is.na(G)], collapse = " "),
+                        "ignored in comparison of", paste(rownames(freqs), collapse = " ")))
+          G <- G[!is.na(G)]
+        }
         result[b] <- mean(G)
       }
       if(metric == "Jost's D"){ # calculate Jost's D and average across loci
-        D <- 2 * (thishets[,"HTest"] - thishets[,"HSest"]) / (1 - thishets[,"HSest"])
+        D <- nsubpop / (nsubpop - 1) * (thishets[,"HTest"] - thishets[,"HSest"]) / (1 - thishets[,"HSest"])
         result[b] <- mean(D)
+        if(nsubpop == 1) result[b] <- 0 # prevent NaN
       }
     }
     
@@ -585,10 +594,7 @@ calcPopDiff<-function(freqs, metric, pops=row.names(freqs),
 
 # wrapper function for backwards compatibility
 calcFst<-function(freqs, pops=row.names(freqs),
-                  loci=unique(as.matrix(as.data.frame(strsplit(names(freqs),
-                                                               split=".",
-                                                               fixed=TRUE),
-                                                      stringsAsFactors=FALSE))[1,]), ...){
+                  loci=unique(gsub("\\..*$", "", names(freqs))), ...){
   return(calcPopDiff(freqs = freqs, metric = "Fst", pops = pops, loci = loci, ...))
 }
 

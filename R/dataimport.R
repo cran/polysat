@@ -8,7 +8,8 @@ read.GeneMapper<-function(infiles, forceInteger=TRUE){
     names(cc) <- c("Sample.Name","Marker")
     for(i in 1:length(infiles)){
         locusdata[[i]]<-read.table(infiles[i],sep="\t",header=TRUE,
-                                   colClasses=cc, stringsAsFactors=FALSE)
+                                   colClasses=cc, stringsAsFactors=FALSE,
+                                   na.strings = c("", "NA"))
         samples<-c(samples,locusdata[[i]][["Sample.Name"]])
         loci<-c(loci,locusdata[[i]][["Marker"]])
     }
@@ -234,8 +235,9 @@ read.SPAGeDi<-function(infile, allelesep="/", returnspatcoord=FALSE){
     }
 
     # read the rest of the file as a table
-    cat(Lines[3:(3+numind)], sep="\n", file="SpagTemp.txt")
-    gentable <- read.table("SpagTemp.txt", sep="\t", header=TRUE,
+    tmp <- tempfile()
+    cat(Lines[3:(3+numind)], sep="\n", file=tmp)
+    gentable <- read.table(tmp, sep="\t", header=TRUE,
                            row.names=1,
                            colClasses=c("character",rep(NA,catpres+numsc),
                            rep("character",numloc)))

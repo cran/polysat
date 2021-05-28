@@ -77,7 +77,7 @@ allele frequencies.
 A file is written but no value is returned.
 }
 \references{
-    \url{http://ebe.ulb.ac.be/ebe/SPAGeDi.html}
+    \url{https://ebe.ulb.ac.be/ebe/SPAGeDi.html}
 
   Hardy, O. J. and Vekemans, X. (2002) SPAGeDi: a versatile computer
   program to analyse spatial genetic structure at the individual or
@@ -148,7 +148,7 @@ myfreq2 <- data.frame(row.names=c("G","R"), Genomes=c(120,200),
              abc.134=c(0.53, 0.3))
 myusatnts <- as.integer(2)
 names(myusatnts) <- "abc"
-write.freq.SPAGeDi(myfreq2, usatnts=myusatnts, file="SPAGfreqExample2.txt")
+write.freq.SPAGeDi(myfreq2, usatnts=myusatnts, file=tempfile())
 }
 
 }
