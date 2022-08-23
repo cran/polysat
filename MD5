@@ -1,6 +1,6 @@
-5f02e482fde142859d060bd185af694a *DESCRIPTION
+57479b8f5be5867f10993ee28e6bb97e *DESCRIPTION
 8a19e722d7ad475bf4cc29e0631bc48c *NAMESPACE
-c50744b11514cc56fcc9ec1325d74141 *NEWS
+282064a128324499f0dbec944d233c15 *NEWS
 765155f213b3a6713c3b60d8984c71b9 *R/RcppExports.R
 be7f307615d27ffc27c81d0c3686eb0c *R/allopolyploidy.R
 b232020aaa1edffbcd2973fab78ff52f *R/class_conversion.R
@@ -9,8 +9,8 @@ b232020aaa1edffbcd2973fab78ff52f *R/class_conversion.R
 8105b488394384ed7b513c4e15eed980 *R/dataimport.R
 9ec369a39d57fe5aa08a67f5489555fb *R/individual_distance.R
 48f0f24c9de4e1fdb29bf551fb7f538b *R/population_stats.R
-31c9c3ad5b102daa6702fc03871dc163 *build/partial.rdb
-bc5c656dd540f5252af188730255fa08 *build/vignette.rds
+afbe4209b3bb961ba3e41cbfe79ea507 *build/partial.rdb
+4e36344061ce490ecd0723d36f17cff7 *build/vignette.rds
 cbf20eeb5b2890ae164bddb36117ce98 *data/AllopolyTutorialData.RData
 a67a0fc43ff6138f1f94095d90220e11 *data/FCRinfo.txt.gz
 7a6576a7d8b2a45d910364ae577a06f5 *data/simgen.RData
@@ -18,10 +18,10 @@ a67a0fc43ff6138f1f94095d90220e11 *data/FCRinfo.txt.gz
 1491639c7f19a673aea96853317bedee *inst/CITATION
 0461a89ce7349a6debf640a7b9781d3c *inst/doc/allopolyVignette.R
 adb9e9a0b96606bb86b6a2445f0e1045 *inst/doc/allopolyVignette.Rnw
-06f3a86985f9e5005f88a4408963f67b *inst/doc/allopolyVignette.pdf
+c00cd787b71f23ee2cd63411bca0cc36 *inst/doc/allopolyVignette.pdf
 461478e9176ae4845136a8911911585e *inst/doc/polysattutorial.R
 393414ea0914cfb060a1737121dd7bcb *inst/doc/polysattutorial.Rnw
-3b5e21c082ae6924839a09bf401dd2c5 *inst/doc/polysattutorial.pdf
+341bff36d264588d6869cd8e0bcb8194 *inst/doc/polysattutorial.pdf
 18c40b47f6a29ece81fa7a8a4ffac7bb *inst/extdata/ATetraExample.txt
 8e7ba05d0f492562b2899a67c51c7873 *inst/extdata/GeneMapperCBA15.txt
 3fe87cba334012a41cb3c8e17f8837cf *inst/extdata/GeneMapperCBA23.txt
